@@ -1,0 +1,13 @@
+{
+    "name": "cloudconvert-bot",
+    "version": "0.2.0",
+    "dependencies": {
+        "cloudconvert": "^1.1.2",
+        "dotenv": "latest",
+        "mongodb": "^3.1.9",
+        "slimbot": "latest"
+    },
+    "scripts": {
+        "start": "node MainBot.js"
+    }
+}
