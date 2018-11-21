@@ -9,6 +9,9 @@ const MongoClient = require('mongodb').MongoClient;
 const Slimbot = require('slimbot');
 const slimbot = new Slimbot(process.env.BOT_API_TOKEN);
 
+var me;
+var isDevBot;
+
 const config = require('./botconfig');
 
 // Connection URL
@@ -30,8 +33,13 @@ client.connect(err => {
     
     db.collection('tasks').countDocuments().then(c => console.log('Number of used chats: ' + c));
     
-    // wait for messages
-    slimbot.startPolling();
+    slimbot.getMe().then(response => {
+        me = response.result.id;
+        isDevBot = response.result.username.indexOf('dev') >= 0;
+        // wait for messages
+        slimbot.startPolling();
+    });
+    
     // client.close();
 });
 
@@ -45,7 +53,21 @@ slimbot.on('message', message => {
     let chatType = chat.type;
     let messageId = message.message_id;
 
-    if (message.hasOwnProperty('text')) {
+    if (message.hasOwnProperty('new_chat_members')) {
+        
+        let botWasAdded = message.new_chat_members.some(user => user.id === me);
+        if (botWasAdded) {
+            registerChat(chatId);
+        }
+        
+    } else if (message.hasOwnProperty('left_chat_member')) {
+    
+        let botWasRemoved = message.left_chat_member.id === me;
+        if (botWasRemoved) {
+            unregisterChat(chatId);
+        }
+    
+    } else if (message.hasOwnProperty('text')) {
         
         let text = message.text;
         
@@ -68,15 +90,32 @@ slimbot.on('message', message => {
 function handleCommand(chatId, chatType, messageId, command) {
    let response;
    if (command.startsWith('/start')) {
-        registerUser(chatId);
+        registerChat(chatId);
         response = config.helpmsg;
     } else if (command.startsWith('/help'))
         response = config.helpmsg;
     else if (command.startsWith('/feedback'))
         response = 'Like this bot? Hit this link and rate it!\n\
 https://telegram.me/storebot?start=cloud_convert_bot';
-    else {
-        let to = command.substring(1).replace('/_/g', '.');
+    else if (command.startsWith('/balance')) {
+        https.get('https://api.cloudconvert.com/user?apikey=' + process.env.CLOUD_CONVERT_API_TOKEN, res => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                let response = JSON.parse(data);
+                let balance = response.minutes;
+                slimbot.sendMessage(chatId, balance + ' conversion minutes remaining.');
+            });
+        }).on("error", err => {
+            console.log("Error: " + err.message);
+        });
+    } else {
+        let atIndex = command.indexOf('@');
+        if (atIndex >= 0)
+            command = command.substring(1, atIndex);
+        else
+            command = command.substring(1);
+        let to = command.replace('/_/g', '.');
         let chatFilter = { _id: chatId };
         db.collection('tasks').findOne(chatFilter, (err, doc) => {
         if (err) debugLog(err); else {
@@ -94,7 +133,7 @@ https://telegram.me/storebot?start=cloud_convert_bot';
                 let from = getExtension(fileName);
                 convertFile(chatId, chatType, messageId, fileId, fileName, from, to);
             } else {
-                let update = { 'task': { 'file_id': fileId, 'file_name': fileName, 'from': undefined, 'to': to } };
+                let update = { 'task': { 'to': to } };
                 db.collection('tasks').updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
                 slimbot.sendMessage(chatId, 'Alright, now send me a file to be converted to ' + to + '!');
             }
@@ -106,7 +145,9 @@ https://telegram.me/storebot?start=cloud_convert_bot';
 }
 
 function handleText(chatId, chatType, messageId, text) {
-    slimbot.sendMessage(chatId, 'Send me a file to convert it!');
+    if (chatType === 'private') {
+        slimbot.sendMessage(chatId, 'Send me a file to convert it!');
+    }
 }
 
 function handleFile(chatId, chatType, messageId, fileId, fileName) {
@@ -125,7 +166,7 @@ function handleFile(chatId, chatType, messageId, fileId, fileName) {
         if (to) {
             convertFile(chatId, chatType, messageId, fileId, fileName, from, to);
         } else {
-            let update = { 'task': { 'file_id': fileId, 'file_name': fileName, 'from': from, 'to': to } };
+            let update = { 'task': { 'file_id': fileId, 'file_name': fileName } };
             db.collection('tasks').updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
             https.get('https://api.cloudconvert.com/conversiontypes?inputformat=' + from, res => {
                 let data = '';
@@ -144,7 +185,17 @@ function handleFile(chatId, chatType, messageId, fileId, fileName) {
 }
 
 function convertFile(chatId, chatType, messageId, fileId, fileName, from, to) {
-    slimbot.sendMessage(chatId, 'I\'m on it! This may take a few seconds or even some minutes, depending on the file size. Plus, I am not in a hurry today ...', {
+    
+    let chatFilter = { _id: chatId };
+    let update = { 'task': { } };
+    db.collection('tasks').updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
+    
+    if (isDevBot) {
+        slimbot.sendMessage(chatId, '[conversion skipped for debug purpose]', { reply_to_message_id: messageId });
+        return;
+    }
+    
+    slimbot.sendMessage(chatId, '\u1f914', {
         reply_to_message_id: messageId
     }).then(statusMessage => {
     slimbot.getFile(fileId).then(response => {
@@ -194,7 +245,7 @@ function showConversionOptions(chatId, chatType, messageId, from, formats) {
         + categories.map(c =>
               '<b>' + c + '</b>\n'
               + formats.filter(f => f.group === c)
-                       .filter(f => f.outputformat !== from)
+                       .filter(f => f.outputformat !== from) // we cannot set conversion parameters so this would be useless
                        .map(f => '/' + f.outputformat
                                         .replace(/ /g, "_")
                                         .replace(/\./g, '_') + ' (<i>' + f.outputformat + '</i>)')
@@ -203,23 +254,21 @@ function showConversionOptions(chatId, chatType, messageId, from, formats) {
     slimbot.sendMessage(chatId, message, { parse_mode: 'html' });
 }
 
-function registerUser(chatId) {
+function registerChat(chatId) {
     let chatFilter = { _id: chatId };
     db.collection('tasks').deleteOne(chatFilter, null, (err, res) =>
     db.collection('tasks').insertOne(
         {
             _id: chatId,
-            task: {
-                file_id: undefined,
-                file_name: undefined,
-                from: undefined,
-                to: undefined
-            }
-        },
-        {
-            upsert: true
+            task: { }
         })
     );
+    db.collection('tasks').countDocuments().then(c => debugLog('Add! Number of used chats: ' + c));
+}
+
+function unregisterChat(chatId) {
+    db.collection('tasks').deleteOne({ _id: chatId });
+    db.collection('tasks').countDocuments().then(c => debugLog('Remove! Number of used chats: ' + c));
 }
 
 function debugLog(err) {
