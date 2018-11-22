@@ -9,7 +9,9 @@ const MongoClient = require('mongodb').MongoClient;
 const Slimbot = require('slimbot');
 const slimbot = new Slimbot(process.env.BOT_API_TOKEN);
 
-var me;
+// Bot information
+var botId;
+var botName;
 var isDevBot;
 
 const config = require('./botconfig');
@@ -34,16 +36,18 @@ client.connect(err => {
     db.collection('tasks').countDocuments().then(c => console.log('Number of used chats: ' + c));
     
     slimbot.getMe().then(response => {
-        me = response.result.id;
-        isDevBot = response.result.username.indexOf('dev') >= 0;
+        botId = response.result.id;
+        botName = response.result.username;
+        isDevBot = false; // response.result.username.indexOf('dev') >= 0;
         // wait for messages
+        console.log('Start polling at ' + new Date());
         slimbot.startPolling();
     });
     
     // client.close();
 });
 
-// prevent zeit.co from restarting the bot
+// Prevent zeit.co from restarting the bot
 http.createServer().listen(3000);
 
 // Register listeners
@@ -55,14 +59,14 @@ slimbot.on('message', message => {
 
     if (message.hasOwnProperty('new_chat_members')) {
         
-        let botWasAdded = message.new_chat_members.some(user => user.id === me);
+        let botWasAdded = message.new_chat_members.some(user => user.id === botId);
         if (botWasAdded) {
             registerChat(chatId);
         }
         
     } else if (message.hasOwnProperty('left_chat_member')) {
     
-        let botWasRemoved = message.left_chat_member.id === me;
+        let botWasRemoved = message.left_chat_member.id === botId;
         if (botWasRemoved) {
             unregisterChat(chatId);
         }
@@ -71,7 +75,8 @@ slimbot.on('message', message => {
         
         let text = message.text;
         
-        if (message.hasOwnProperty('entities') && message.entities[0].type === 'bot_command') {
+        if (message.hasOwnProperty('entities') && message.entities[0].type === 'bot_command'
+                && (text.indexOf('@') < 0 || text.endsWith(botName))) {
             handleCommand(chatId, chatType, messageId, text);
         } else {
             handleText(chatId, chatType, messageId, text);
@@ -106,9 +111,7 @@ https://telegram.me/storebot?start=cloud_convert_bot';
                 let balance = response.minutes;
                 slimbot.sendMessage(chatId, balance + ' conversion minutes remaining.');
             });
-        }).on("error", err => {
-            console.log("Error: " + err.message);
-        });
+        }).on("error", err => debugLog(err));
     } else {
         let atIndex = command.indexOf('@');
         if (atIndex >= 0)
@@ -175,9 +178,7 @@ function handleFile(chatId, chatType, messageId, fileId, fileName) {
                     let formats = JSON.parse(data);
                     showConversionOptions(chatId, chatType, messageId, from, formats);
                 });
-            }).on("error", err => {
-                debugLog("Error: " + err.message);
-            });
+            }).on("error", err => debugLog(err));
         }
     }
     });
@@ -195,38 +196,40 @@ function convertFile(chatId, chatType, messageId, fileId, fileName, from, to) {
         return;
     }
     
-    slimbot.sendMessage(chatId, '\u1f914', {
+    slimbot.sendMessage(chatId, String.fromCodePoint(0x1f914), {
         reply_to_message_id: messageId
     }).then(statusMessage => {
     slimbot.getFile(fileId).then(response => {
     let url = 'https://api.telegram.org/file/bot' + process.env.BOT_API_TOKEN + '/' + response.result.file_path;
+    let cloudconvertOutput = (to === 'animation' ? 'gif' : to);
     cloudconvert.createProcess({
         "inputformat": from,
-        "outputformat": to
+        "outputformat": cloudconvertOutput
     }, (err, process) => {
     if (err) debugLog(err); else
     process.start({
         "input": "download",
         "file": url,
-        "outputformat": to,
+        "outputformat": cloudconvertOutput,
         "email": true
     }, (err, process) => {
     if (err) debugLog(err); else
     process.wait((err, process) => {
     if (err) debugLog(err); else {
-    let path = '/tmp/' + fileName + '.' + to;
-    slimbot.deleteMessage(chatId, statusMessage.result.message_id);
-    slimbot.sendChatAction(chatId, 'upload_document');
+    let path = '/tmp/' + fileName + '.' + cloudconvertOutput;
     process.download(fs.createWriteStream(path), null, (err, process) => {
     if (err) debugLog(err); else {
     slimbot.sendChatAction(chatId, 'upload_document');
-    slimbot.sendDocument(chatId, fs.createReadStream(path), {
-        reply_to_message_id: messageId
-    }).then(message => 
+    let file = fs.createReadStream(path);
+    let replyOption = { reply_to_message_id: messageId };
+    slimbot.deleteMessage(chatId, statusMessage.result.message_id);
+    slimbot.sendDocument(chatId, file, replyOption).then(message =>
     fs.unlink(path, err => {
-    if (err) debugLog(err);
-    }) // unlink end
-    ); // sendDocument end
+    if (err) debugLog(err); else if (to === 'animation') {
+        slimbot.sendAnimation(chatId, file, replyOption).then(callback);
+    
+    } // unlink end
+    }));
     }}); // download end
     }}); // wait end
     }); // start end
@@ -256,19 +259,16 @@ function showConversionOptions(chatId, chatType, messageId, from, formats) {
 
 function registerChat(chatId) {
     let chatFilter = { _id: chatId };
-    db.collection('tasks').deleteOne(chatFilter, null, (err, res) =>
-    db.collection('tasks').insertOne(
-        {
-            _id: chatId,
-            task: { }
-        })
-    );
-    db.collection('tasks').countDocuments().then(c => debugLog('Add! Number of used chats: ' + c));
+    let collection = db.collection('tasks');
+    collection.deleteOne(chatFilter, null, (err, res) =>
+    collection.insertOne({ _id: chatId, task: { }, auto: [] }, null, (err, res) =>
+    collection.countDocuments().then(c => debugLog('Add! Number of used chats: ' + c))));
 }
 
 function unregisterChat(chatId) {
-    db.collection('tasks').deleteOne({ _id: chatId });
-    db.collection('tasks').countDocuments().then(c => debugLog('Remove! Number of used chats: ' + c));
+    let collection = db.collection('tasks');
+    collection.deleteOne({ _id: chatId }, null, (err, res) =>
+    collection.countDocuments().then(c => debugLog('Remove! Number of used chats: ' + c)));
 }
 
 function debugLog(err) {
