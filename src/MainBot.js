@@ -46,7 +46,7 @@ client.connect(err => {
         let result = response.result;
         botId = result.id;
         botName = result.username;
-        isDevBot = false; // botName.indexOf('dev') >= 0;
+        isDevBot = botName.indexOf('dev') >= 0;
         // wait for messages
         console.log('Start polling at ' + new Date());
         slimbot.startPolling();
@@ -132,8 +132,8 @@ slimbot.on('message', message => {
                 }
             } else if (message.hasOwnProperty('caption')) {
                 let caption = message.caption;
-                if (reply.hasOwnProperty('caption_entities')
-                    && reply.caption_entities[0].type === 'bot_command'
+                if (message.hasOwnProperty('caption_entities')
+                    && message.caption_entities[0].type === 'bot_command'
                     && (caption.indexOf('@') < 0 || caption.endsWith(botName))) {
                     command = caption;
                 }
@@ -154,6 +154,33 @@ slimbot.on('message', message => {
 
 });
 
+slimbot.on('callback_query', query => {
+    let data = JSON.parse(query.data);
+    if (data) {
+        let message = query.message;
+        let chatId = message.chat.id;
+        let messageId = message.message_id;
+        let conversion = {
+            from: data.from,
+            to: data.to
+        };
+        let chatFilter = { _id: chatId };
+        let element = { auto: conversion };
+        let update;
+        if (data.auto) {
+            update = { $pull: element };
+        } else {
+            update = { $addToSet: element };
+        }
+        db.collection('tasks').updateOne(chatFilter, update, null, err => {
+            if (err) debugLog(err); else {
+                slimbot.answerCallbackQuery(query.id, { text: 'Saved.' });
+                slimbot.editMessageReplyMarkup(chatId, messageId, buildReplyMarkup(conversion, !data.auto));
+            }
+        });
+    }
+});
+
 function handleCommand(chatId, chatType, messageId, command, options) {
     let response;
     if (command.startsWith('/start')) {
@@ -170,7 +197,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
             res.on('end', () => {
                 let response = JSON.parse(data);
                 let balance = response.minutes;
-                slimbot.sendMessage(chatId, balance + ' conversion minutes remaining.');
+                slimbot.sendMessage(chatId, 'Remaining conversion minutes: <b>' + balance + '</b>', { parse_mode: 'html' });
             });
         }).on("error", err => debugLog(err));
     } else if (command.startsWith('/convert')) {
@@ -179,7 +206,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
             let chatFilter = { _id: chatId };
             let update = { 'task': { 'file_id': fileId } };
             db.collection('tasks').updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
-            findConversionOptions(chatId, chatType, messageId, fileId);
+            findConversionOptionsByFileId(chatId, chatType, messageId, fileId);
         } else {
             slimbot.sendMessage(chatId, 'Use this command when responding to a file! \
 I will then list all possible conversions for that.');
@@ -241,10 +268,27 @@ function handleFile(chatId, chatType, messageId, fileId) {
                 convertFile(chatId, chatType, messageId, fileId, to);
             } else {
                 let update = { 'task': { 'file_id': fileId } };
-                db.collection('tasks').updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
-                if (chatType === 'private') {
-                    findConversionOptions(chatId, chatType, messageId, fileId);
-                }
+                let collection = db.collection('tasks');
+                collection.updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
+                slimbot.getFile(fileId).then(response => {
+                    let from = getExtension(response.result.file_path);
+                    chatFilter['auto.from'] = from;
+                    let projection = {
+                        auto: {
+                            $elemMatch: { from: from }
+                        }
+                    };
+                    collection.findOne(chatFilter, { projection: projection }, (err, doc) => {
+                        if (err) debugLog(err); else {
+                            if (doc && doc.hasOwnProperty('auto') && doc.auto[0].hasOwnProperty('to')) {
+                                let to = doc.auto[0].to;
+                                convertFile(chatId, chatType, messageId, fileId, to);
+                            } else if (chatType === 'private') {
+                                findConversionOptions(chatId, chatType, messageId, from);
+                            }
+                        }
+                    });
+                });
             }
         }
     });
@@ -278,49 +322,84 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                 "inputformat": from,
                 "outputformat": to
             }, (err, process) => {
-                if (err) debugLog(err); else
+                if (err) debugLog(err); else {
                     process.start({
                         "input": "download",
                         "file": url,
                         "outputformat": to,
                         "email": true
                     }, (err, process) => {
-                        if (err) debugLog(err); else
-                            process.wait((err, process) => {
+                        if (err) debugLog(err); else {
+                            let conversion = {
+                                from: from,
+                                to: to
+                            };
+                            db.collection('tasks').findOne({
+                                _id: chatId,
+                                auto: conversion
+                            }, null, (err, doc) => {
                                 if (err) debugLog(err); else {
-                                    let tmpPath = '/tmp/' + path.basename(filePath, from) + '.' + to;
-                                    process.download(fs.createWriteStream(tmpPath), null, err => {
+                                    let options = {
+                                        reply_to_message_id: messageId,
+                                        reply_markup: buildReplyMarkup(conversion, doc ? true : false)
+                                    };
+                                    process.wait((err, process) => {
                                         if (err) debugLog(err); else {
-                                            slimbot.sendChatAction(chatId, 'upload_document');
-                                            let file = fs.createReadStream(tmpPath);
-                                            let options = { reply_to_message_id: messageId };
-                                            slimbot.deleteMessage(chatId, statusMessage.result.message_id);
-                                            slimbot.sendDocument(chatId, file, options).then(() => fs.unlink(tmpPath, err => {
-                                                if (err)
-                                                    debugLog(err);
-                                            }));
+                                            let tmpPath = '/tmp/' + path.basename(filePath, from) + '.' + to;
+                                            process.download(fs.createWriteStream(tmpPath), null, err => {
+                                                if (err) debugLog(err); else {
+                                                    slimbot.sendChatAction(chatId, 'upload_document');
+                                                    let file = fs.createReadStream(tmpPath);
+                                                    slimbot.deleteMessage(chatId, statusMessage.result.message_id);
+                                                    slimbot.sendDocument(chatId, file, options).then(() => fs.unlink(tmpPath, err => {
+                                                        if (err)
+                                                            debugLog(err);
+                                                    }));
+                                                }
+                                            });
                                         }
                                     });
                                 }
                             });
+                        }
                     });
+                }
             });
         });
     });
 }
 
-function findConversionOptions(chatId, chatType, messageId, fileId) {
+function buildReplyMarkup(conversion, auto) {
+    let buttonText = 'auto-convert ' + conversion.from
+        + ' to ' + conversion.to + ': '
+        + (auto ? String.fromCodePoint(0x2705) : String.fromCodePoint(0x274c));
+    conversion.auto = auto;
+    return JSON.stringify({
+        inline_keyboard: [[
+            {
+                text: buttonText,
+                callback_data: JSON.stringify(conversion)
+            }
+        ]]
+    });
+}
+
+function findConversionOptionsByFileId(chatId, chatType, messageId, fileId) {
     slimbot.getFile(fileId).then(response => {
         let from = getExtension(response.result.file_path);
-        https.get('https://api.cloudconvert.com/conversiontypes?inputformat=' + from, res => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                let formats = JSON.parse(data);
-                showConversionOptions(chatId, chatType, messageId, from, formats);
-            });
-        }).on("error", err => debugLog(err));
+        findConversionOptions(chatId, chatType, messageId, from);
     });
+}
+
+function findConversionOptions(chatId, chatType, messageId, from) {
+    https.get('https://api.cloudconvert.com/conversiontypes?inputformat=' + from, res => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+            let formats = JSON.parse(data);
+            showConversionOptions(chatId, chatType, messageId, from, formats);
+        });
+    }).on("error", err => debugLog(err));
 }
 
 function showConversionOptions(chatId, chatType, messageId, from, formats) {
