@@ -218,7 +218,6 @@ slimbot.on('message', message => {
             }
         }
     }
-
 });
 
 slimbot.on('callback_query', query => {
@@ -357,7 +356,6 @@ function handleText(chatId, chatType, messageId, text) {
 }
 
 function handleFile(chatId, chatType, messageId, fileId) {
-
     let chatFilter = { _id: chatId };
     db.collection('tasks').findOne(chatFilter, (err, doc) => {
         if (err) debugLog(err); else {
@@ -396,7 +394,6 @@ function handleFile(chatId, chatType, messageId, fileId) {
             }
         }
     });
-
 }
 
 function convertFile(chatId, chatType, messageId, fileId, to) {
@@ -422,8 +419,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
             let filePath = response.result.file_path;
             let from = getExtension(filePath);
             let url = 'https://api.telegram.org/file/bot' + process.env.BOT_API_TOKEN + '/' + filePath;
-
-            db.collection('tasks').findOne(chatFilter, { projection: projection }, (err, doc) => {
+            db.collection('tasks').findOne(chatFilter, null, (err, doc) => {
                 if (err) debugLog(err); else {
                     let cc = cloudconvert;
                     if (doc && doc.hasOwnProperty('api_key')) {
@@ -463,8 +459,12 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                                                             let file = fs.createReadStream(tmpPath);
                                                             slimbot.deleteMessage(chatId, statusMessage.result.message_id);
                                                             slimbot.sendDocument(chatId, file, options).then(() => fs.unlink(tmpPath, err => {
-                                                                if (err)
-                                                                    debugLog(err);
+                                                                if (err) debugLog(err); else {
+                                                                    db.collection('stats').insertOne({
+                                                                        chat_id: chatId,
+                                                                        conversion: conversion
+                                                                    });
+                                                                }
                                                             }));
                                                             process.delete();
                                                         }
