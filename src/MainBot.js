@@ -150,14 +150,20 @@ slimbot.on('message', message => {
                 saveApiKey(chatId, text);
                 return;
             } else {
-                let file = ['audio',
-                    'document',
-                    'photo',
-                    'video',
-                    'voice',
-                    'video_note']
-                    .map(p => reply[p])
-                    .find(p => p !== undefined);
+                let file;
+                if (reply.hasOwnProperty('photo')) {
+                    file = reply.photo[reply.photo.length - 1];
+                } else {
+                    file = ['audio',
+                        'document',
+                        'sticker',
+                        'video',
+                        'voice',
+                        'video_note']
+                        .map(p => reply[p])
+                        .find(p => p !== undefined);
+                }
+
                 if (file) {
                     let fileId = file.file_id;
                     if (fileId) {
@@ -175,46 +181,53 @@ slimbot.on('message', message => {
         }
 
     } else {
-        let file = ['audio',
-            'document',
-            'photo',
-            'video',
-            'voice',
-            'video_note']
-            .map(p => message[p])
-            .find(p => p !== undefined);
-        let fileId = file.file_id;
-        if (fileId) {
-
-            let command;
-            if (message.hasOwnProperty('reply_to_message')) {
-                let reply = message.reply_to_message;
-                if (reply.hasOwnProperty('text')) {
-                    let text = reply.text;
-                    if (reply.hasOwnProperty('entities')
-                        && reply.entities[0].type === 'bot_command'
-                        && (text.indexOf('@') < 0 || text.endsWith(botName))) {
-                        command = text;
+        let file;
+        if (message.hasOwnProperty('photo')) {
+            let photoSizes = message.photo;
+            file = photoSizes[photoSizes.length - 1];
+        } else {
+            file = ['audio',
+                'document',
+                'sticker',
+                'video',
+                'voice',
+                'video_note']
+                .map(p => message[p])
+                .find(p => p !== undefined);
+        }
+        if (file) {
+            let fileId = file.file_id;
+            if (fileId) {
+                let command;
+                if (message.hasOwnProperty('reply_to_message')) {
+                    let reply = message.reply_to_message;
+                    if (reply.hasOwnProperty('text')) {
+                        let text = reply.text;
+                        if (reply.hasOwnProperty('entities')
+                            && reply.entities[0].type === 'bot_command'
+                            && (text.indexOf('@') < 0 || text.endsWith(botName))) {
+                            command = text;
+                        }
+                    }
+                } else if (message.hasOwnProperty('caption')) {
+                    let caption = message.caption;
+                    if (message.hasOwnProperty('caption_entities')
+                        && message.caption_entities[0].type === 'bot_command'
+                        && (caption.indexOf('@') < 0 || caption.endsWith(botName))) {
+                        command = caption;
                     }
                 }
-            } else if (message.hasOwnProperty('caption')) {
-                let caption = message.caption;
-                if (message.hasOwnProperty('caption_entities')
-                    && message.caption_entities[0].type === 'bot_command'
-                    && (caption.indexOf('@') < 0 || caption.endsWith(botName))) {
-                    command = caption;
+                if (command) {
+                    let atIndex = command.indexOf('@');
+                    if (atIndex >= 0)
+                        command = command.substring(1, atIndex);
+                    else
+                        command = command.substring(1);
+                    let to = command.replace('/_/g', '.');
+                    convertFile(chatId, chatType, messageId, fileId, to);
+                } else {
+                    handleFile(chatId, chatType, messageId, fileId);
                 }
-            }
-            if (command) {
-                let atIndex = command.indexOf('@');
-                if (atIndex >= 0)
-                    command = command.substring(1, atIndex);
-                else
-                    command = command.substring(1);
-                let to = command.replace('/_/g', '.');
-                convertFile(chatId, chatType, messageId, fileId, to);
-            } else {
-                handleFile(chatId, chatType, messageId, fileId);
             }
         }
     }
@@ -434,8 +447,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                             process.start({
                                 "input": "download",
                                 "file": url,
-                                "outputformat": to,
-                                "email": false
+                                "outputformat": to
                             }, (err, process) => {
                                 if (err) debugLog(err); else {
                                     let conversion = {
