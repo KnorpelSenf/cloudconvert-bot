@@ -240,8 +240,9 @@ slimbot.on('callback_query', query => {
         }
         db.collection('tasks').updateOne(chatFilter, update, null, err => {
             if (err) debugLog(err); else {
+                conversion.auto = !data.auto;
                 slimbot.answerCallbackQuery(query.id, { text: autoConversionSaved });
-                slimbot.editMessageReplyMarkup(chatId, messageId, buildReplyMarkup(conversion, !data.auto));
+                slimbot.editMessageReplyMarkup(chatId, messageId, buildReplyMarkup(conversion));
             }
         });
     }
@@ -446,9 +447,10 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                                         auto: conversion
                                     }, null, (err, doc) => {
                                         if (err) debugLog(err); else {
+                                            conversion.auto = doc ? true : false; // used for stats and reply markup
                                             let options = {
                                                 reply_to_message_id: messageId,
-                                                reply_markup: buildReplyMarkup(conversion, doc ? true : false)
+                                                reply_markup: buildReplyMarkup(conversion)
                                             };
                                             process.wait((err, process) => {
                                                 if (err) debugLog(err); else {
@@ -462,7 +464,8 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                                                                 if (err) debugLog(err); else {
                                                                     db.collection('stats').insertOne({
                                                                         chat_id: chatId,
-                                                                        conversion: conversion
+                                                                        conversion: conversion,
+                                                                        completed: new Date()
                                                                     });
                                                                 }
                                                             }));
@@ -483,11 +486,10 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
     });
 }
 
-function buildReplyMarkup(conversion, auto) {
+function buildReplyMarkup(conversion) {
     let buttonText = 'auto-convert ' + conversion.from
         + ' to ' + conversion.to + ': '
-        + (auto ? String.fromCodePoint(0x2705) : String.fromCodePoint(0x274c));
-    conversion.auto = auto;
+        + (conversion.auto ? String.fromCodePoint(0x2705) : String.fromCodePoint(0x274c));
     return JSON.stringify({
         inline_keyboard: [[
             {
