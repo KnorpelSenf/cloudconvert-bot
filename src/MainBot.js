@@ -74,6 +74,11 @@ const apiKeyProvided = 'Thank you for providing the API key! Your own account is
 and set up. By no longer relying on the default account, you help making the bot more useful \
 for everyone out there!';
 
+const unsupportedConversion = 'This conversion is not supported!';
+const conversionError = 'The conversion could not be performed. See the details below.';
+const unknownError = 'Something went wrong. Sorry for that. You may contact \
+@KnorpelSenf because of this.';
+
 // Prevent zeit.co from restarting the bot
 https.createServer().listen(3000);
 
@@ -110,7 +115,7 @@ client.connect(err => {
         let result = response.result;
         botId = result.id;
         botName = result.username;
-        isDevBot = botName.indexOf('dev') >= 0;
+        isDevBot = false; // botName.indexOf('dev') >= 0;
         // wait for messages
         console.log('Start polling at ' + new Date());
         slimbot.startPolling();
@@ -254,11 +259,13 @@ slimbot.on('callback_query', query => {
         } else {
             update = { $addToSet: element };
         }
-        db.collection('tasks').updateOne(chatFilter, update, null, err => {
+        db.collection('tasks').updateOne(chatFilter, update, null, (err, obj) => {
             if (err) debugLog(err); else {
-                conversion.auto = !data.auto;
                 slimbot.answerCallbackQuery(query.id, { text: autoConversionSaved });
-                slimbot.editMessageReplyMarkup(chatId, messageId, buildReplyMarkup(conversion));
+                if (obj && obj.modifiedCount > 0) {
+                    conversion.auto = !data.auto;
+                    slimbot.editMessageReplyMarkup(chatId, messageId, buildReplyMarkup(conversion));
+                }
             }
         });
     }
@@ -313,6 +320,9 @@ function handleCommand(chatId, chatType, messageId, command, options) {
         slimbot.sendMessage(chatId, helpmsgFeedback, { parse_mode: 'html' });
     } else if (command.startsWith('/apikey')) {
         let apiKey = command.substring('/apikey'.length).trim();
+        if (apiKey.startsWith('@')) {
+            apiKey = apiKey.substring(botName.length + 1);
+        }
         if (apiKey && apiKey.length > 0) {
             saveApiKey(chatId, apiKey);
         } else {
@@ -374,7 +384,8 @@ function handleText(chatId, chatType, messageId, text) {
 
 function handleFile(chatId, chatType, messageId, fileId) {
     let chatFilter = { _id: chatId };
-    db.collection('tasks').findOne(chatFilter, (err, doc) => {
+    let collection = db.collection('tasks');
+    collection.findOne(chatFilter, (err, doc) => {
         if (err) debugLog(err); else {
             let to;
             if (doc && doc.hasOwnProperty('task')) {
@@ -387,28 +398,26 @@ function handleFile(chatId, chatType, messageId, fileId) {
                 convertFile(chatId, chatType, messageId, fileId, to);
             } else {
                 let update = { 'task': { 'file_id': fileId } };
-                let collection = db.collection('tasks');
                 collection.updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
-                slimbot.getFile(fileId).then(response => {
-                    let from = getExtension(response.result.file_path);
-                    chatFilter['auto.from'] = from;
-                    let projection = {
-                        auto: {
-                            $elemMatch: { from: from }
-                        }
-                    };
-                    collection.findOne(chatFilter, { projection: projection }, (err, doc) => {
-                        if (err) debugLog(err); else {
-                            if (doc && doc.hasOwnProperty('auto') && doc.auto[0].hasOwnProperty('to')) {
-                                let to = doc.auto[0].to;
-                                convertFile(chatId, chatType, messageId, fileId, to);
-                            } else if (chatType === 'private') {
-                                findConversionOptions(chatId, chatType, messageId, from);
+            }
+            slimbot.getFile(fileId).then(response => {
+                let from = getExtension(response.result.file_path);
+                collection.findOne(chatFilter, { projection: { auto: 1 } }, (err, doc) => {
+                    if (err) debugLog(err); else {
+                        let converted = false;
+                        if (doc && doc.hasOwnProperty('auto')) {
+                            let autoConversions = doc.auto.filter(c => c.from === from);
+                            if (autoConversions.length > 0) {
+                                converted = true;
+                                autoConversions.forEach(c => convertFile(chatId, chatType, messageId, fileId, c.to));
                             }
                         }
-                    });
+                        if (!converted && chatType === 'private') {
+                            findConversionOptions(chatId, chatType, messageId, from);
+                        }
+                    }
                 });
-            }
+            });
         }
     });
 }
@@ -436,8 +445,11 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
             let filePath = response.result.file_path;
             let from = getExtension(filePath);
             let url = 'https://api.telegram.org/file/bot' + process.env.BOT_API_TOKEN + '/' + filePath;
-            db.collection('tasks').findOne(chatFilter, null, (err, doc) => {
-                if (err) debugLog(err); else {
+            db.collection('tasks').findOne(chatFilter, { projection: { api_key: 1 } }, (err, doc) => {
+                if (err) {
+                    slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
+                    debugLog(err);
+                } else {
                     let cc = cloudconvert;
                     if (doc && doc.hasOwnProperty('api_key')) {
                         cc = new CloudConvert(doc.api_key);
@@ -446,13 +458,29 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                         "inputformat": from,
                         "outputformat": to
                     }, (err, process) => {
-                        if (err) debugLog(err); else {
+                        if (err) {
+                            if (err.code === 400) {
+                                slimbot.editMessageText(chatId, statusMessage.result.message_id, unsupportedConversion
+                                    + ' (' + from + ' to ' + to + ')');
+                            } else {
+                                slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
+                                debugLog(err);
+                            }
+                        } else {
                             process.start({
                                 "input": "download",
                                 "file": url,
                                 "outputformat": to
                             }, (err, process) => {
-                                if (err) debugLog(err); else {
+                                if (err) {
+                                    if (err.code === 422) {
+                                        slimbot.editMessageText(chatId, statusMessage.result.message_id, conversionError
+                                            + '(' + from + ' -> ' + to + ')\n\n' + err.message);
+                                    } else {
+                                        slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
+                                        debugLog(err);
+                                    }
+                                } else {
                                     let conversion = {
                                         from: from,
                                         to: to
@@ -461,22 +489,39 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                                         _id: chatId,
                                         auto: conversion
                                     }, null, (err, doc) => {
-                                        if (err) debugLog(err); else {
+                                        if (err) {
+                                            slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
+                                            debugLog(err);
+                                        } else {
                                             conversion.auto = doc ? true : false; // used for stats and reply markup
                                             let options = {
                                                 reply_to_message_id: messageId,
                                                 reply_markup: buildReplyMarkup(conversion)
                                             };
                                             process.wait((err, process) => {
-                                                if (err) debugLog(err); else {
+                                                if (err) {
+                                                    if (err.code === 422) {
+                                                        slimbot.editMessageText(chatId, statusMessage.result.message_id, conversionError
+                                                            + '(' + from + ' -> ' + to + ')\n\n' + err.message);
+                                                    } else {
+                                                        slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
+                                                        debugLog(err);
+                                                    }
+                                                } else {
                                                     let tmpPath = '/tmp/' + path.basename(filePath, from) + '.' + to;
                                                     process.download(fs.createWriteStream(tmpPath), null, err => {
-                                                        if (err) debugLog(err); else {
+                                                        if (err) {
+                                                            slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
+                                                            debugLog(err);
+                                                        } else {
                                                             slimbot.sendChatAction(chatId, 'upload_document');
                                                             let file = fs.createReadStream(tmpPath);
                                                             slimbot.deleteMessage(chatId, statusMessage.result.message_id);
                                                             slimbot.sendDocument(chatId, file, options).then(() => fs.unlink(tmpPath, err => {
-                                                                if (err) debugLog(err); else {
+                                                                if (err) {
+                                                                    slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
+                                                                    debugLog(err);
+                                                                } else {
                                                                     db.collection('stats').insertOne({
                                                                         chat_id: chatId,
                                                                         conversion: conversion,
