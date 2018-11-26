@@ -19,15 +19,15 @@ You have up to 25 conversions per day for free. Type /balance to find out more.'
 const helpmsgGroups = '<b>Hi there!</b>\nMy name is Cloud Convert Bot and I can help you \
 with file conversions of any kind! Respond to any file in this group with /convert and \
 I will list the possible conversions. (You can also send the format directly, e. g. /mp4. \
-    Just make sure to <i>respond</i> to the file. Or just send the command directly as a \
-    caption!)\n\n\
-    To activate auto-conversions for a file type, hit the button under a converted file.';
+Just make sure to <i>respond</i> to the file. Or just send the command directly as a \
+caption!)\n\n\
+To activate auto-conversions for a file type, hit the button under a converted file.';
 
 const helpmsgBalance = 'All users of this bot share a common pool of 25 conversions per day. \
-    You can check the balance with /balance.\n\n\
-    You can <b>claim your own extra 25 free conversions per day</b>! No one else will be able to \
-    impact this counter. You will not have to pay anything for this and it works entirely \
-    without witchcraft. All you need to do is to follow these three steps:\n\
+You can check the balance with /balance.\n\n\
+You can <b>claim your own extra 25 free conversions per day</b>! No one else will be able to \
+impact this counter. You will not have to pay anything for this and it works entirely \
+without witchcraft. All you need to do is to follow these three steps:\n\
 <b>1)</b> Create your own Cloud Convert account <a href="https://cloudconvert.com/register">here</a>.\n\
 <b>2)</b> Visit the <a href="https://cloudconvert.com/dashboard/api">dashboard</a> and copy the API key.\n\
 <b>3)</b> Get back to this chat and send /apikey. Paste the API key into this chat.\n\
