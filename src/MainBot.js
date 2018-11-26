@@ -5,7 +5,6 @@ const MongoClient = require('mongodb').MongoClient;
 const fs = require('fs');
 const path = require('path');
 
-
 const helpmsgPrivate = '<b>Hi there!</b>\nI can help you convert anything to anything! \
 I connect to www.cloudconvert.com to do this. Just send me a file and I will tell \
 you everything I can do with it!\n\n\
@@ -475,7 +474,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                                 if (err) {
                                     if (err.code === 422) {
                                         slimbot.editMessageText(chatId, statusMessage.result.message_id, conversionError
-                                            + '(' + from + ' -> ' + to + ')\n\n' + err.message);
+                                            + ' (' + from + ' to ' + to + ')\n\n' + err.message);
                                     } else {
                                         slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
                                         debugLog(err);
@@ -502,7 +501,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                                                 if (err) {
                                                     if (err.code === 422) {
                                                         slimbot.editMessageText(chatId, statusMessage.result.message_id, conversionError
-                                                            + '(' + from + ' -> ' + to + ')\n\n' + err.message);
+                                                            + ' (' + from + ' to ' + to + ')\n\n' + err.message);
                                                     } else {
                                                         slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
                                                         debugLog(err);
