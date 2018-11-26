@@ -67,6 +67,10 @@ I will then list all possible conversions for that.';
 
 const helpmsgFile = 'Alright, now send me a file to be converted to ';
 
+const cancelOperation = 'Cancel operation';
+
+const operationCancelled = 'Operation cancelled.';
+
 const helpmsgText = 'Send me a file to convert it!';
 
 const apiKeyProvided = 'Thank you for providing the API key! Your own account is now ready \
@@ -122,7 +126,7 @@ client.connect(err => {
         let result = response.result;
         botId = result.id;
         botName = result.username;
-        isDevBot = false; // botName.indexOf('dev') >= 0;
+        isDevBot = botName.indexOf('dev') >= 0;
         // wait for messages
         console.log('Start polling at ' + new Date());
         slimbot.startPolling();
@@ -188,7 +192,9 @@ slimbot.on('message', message => {
             }
         }
 
-        if (message.hasOwnProperty('entities') && message.entities[0].type === 'bot_command'
+        if (message.hasOwnProperty('entities')
+            && message.entities[0].type === 'bot_command'
+            && message.entities[0].offset === 0
             && (lowerText.indexOf('@') < 0 || lowerText.endsWith(botName))) {
             handleCommand(chatId, chatType, messageId, lowerText, options);
         } else {
@@ -252,29 +258,35 @@ slimbot.on('callback_query', query => {
     let data = JSON.parse(query.data);
     if (data) {
         let message = query.message;
-        let chatId = message.chat.id;
         let messageId = message.message_id;
-        let conversion = {
-            from: data.from,
-            to: data.to
-        };
-        let chatFilter = { _id: chatId };
-        let element = { auto: conversion };
-        let update;
-        if (data.auto) {
-            update = { $pull: element };
+        let chatId = message.chat.id;
+        if (data.cancel) {
+            clearTask(chatId);
+            slimbot.answerCallbackQuery(query.id, { text: autoConversionSaved });
+            slimbot.editMessageText(chatId, messageId, operationCancelled);
         } else {
-            update = { $addToSet: element };
-        }
-        db.collection('tasks').updateOne(chatFilter, update, null, (err, obj) => {
-            if (err) debugLog(err); else {
-                slimbot.answerCallbackQuery(query.id, { text: autoConversionSaved });
-                if (obj && obj.modifiedCount > 0) {
-                    conversion.auto = !data.auto;
-                    slimbot.editMessageReplyMarkup(chatId, messageId, buildReplyMarkup(conversion));
-                }
+            let conversion = {
+                from: data.from,
+                to: data.to
+            };
+            let chatFilter = { _id: chatId };
+            let element = { auto: conversion };
+            let update;
+            if (data.auto) {
+                update = { $pull: element };
+            } else {
+                update = { $addToSet: element };
             }
-        });
+            db.collection('tasks').updateOne(chatFilter, update, null, (err, obj) => {
+                if (err) debugLog(err); else {
+                    slimbot.answerCallbackQuery(query.id, { text: autoConversionSaved });
+                    if (obj && obj.modifiedCount > 0) {
+                        conversion.auto = !data.auto;
+                        slimbot.editMessageReplyMarkup(chatId, messageId, buildAutoConversionReplyMarkup(conversion));
+                    }
+                }
+            });
+        }
     }
 });
 
@@ -290,6 +302,9 @@ function handleCommand(chatId, chatType, messageId, command, options) {
             response = helpmsgGroups;
         }
         slimbot.sendMessage(chatId, response, { parse_mode: 'html' });
+    } else if (command.startsWith('/cancel')) {
+        clearTask(chatId);
+        slimbot.sendMessage(chatId, operationCancelled);
     } else if (command.startsWith('/balance')) {
         let chatFilter = { _id: chatId };
         db.collection('tasks').findOne(chatFilter, null, (err, doc) => {
@@ -375,7 +390,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
                     } else {
                         let update = { 'task': { 'to': to } };
                         db.collection('tasks').updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
-                        slimbot.sendMessage(chatId, helpmsgFile + to + '!');
+                        slimbot.sendMessage(chatId, helpmsgFile + to + '!', { reply_markup: buildCancelOperationReplyMarkup() });
                     }
                 }
             });
@@ -432,9 +447,7 @@ function handleFile(chatId, chatType, messageId, fileId) {
 
 function convertFile(chatId, chatType, messageId, fileId, to) {
 
-    let chatFilter = { _id: chatId };
-    let update = { 'task': {} };
-    db.collection('tasks').updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
+    clearTask(chatId);
 
     if (isDevBot) {
         slimbot.sendMessage(chatId, '[conversion skipped for debug purpose]', { reply_to_message_id: messageId });
@@ -450,9 +463,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
         reply_to_message_id: messageId
     }).then(statusMessage => {
         slimbot.getFile(fileId).then(response => {
-            let filePath = response.result.file_path;
-            let from = getExtension(filePath);
-            let url = 'https://api.telegram.org/file/bot' + process.env.BOT_API_TOKEN + '/' + filePath;
+            let chatFilter = { _id: chatId };
             db.collection('tasks').findOne(chatFilter, { projection: { api_key: 1 } }, (err, doc) => {
                 if (err) {
                     slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
@@ -464,6 +475,8 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                         apiKey = doc.api_key;
                         cc = new CloudConvert(apiKey);
                     }
+                    let filePath = response.result.file_path;
+                    let from = getExtension(filePath);
                     cc.createProcess({
                         "inputformat": from,
                         "outputformat": to
@@ -485,6 +498,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                                 debugLog(err);
                             }
                         } else {
+                            let url = 'https://api.telegram.org/file/bot' + process.env.BOT_API_TOKEN + '/' + filePath;
                             process.start({
                                 "input": "download",
                                 "file": url,
@@ -514,7 +528,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                                             conversion.auto = doc ? true : false; // used for stats and reply markup
                                             let options = {
                                                 reply_to_message_id: messageId,
-                                                reply_markup: buildReplyMarkup(conversion)
+                                                reply_markup: buildAutoConversionReplyMarkup(conversion)
                                             };
                                             process.wait((err, process) => {
                                                 if (err) {
@@ -564,7 +578,13 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
     });
 }
 
-function buildReplyMarkup(conversion) {
+function clearTask(chatId) {
+    let chatFilter = { _id: chatId };
+    let update = { 'task': {} };
+    db.collection('tasks').updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
+}
+
+function buildAutoConversionReplyMarkup(conversion) {
     let buttonText = 'auto-convert ' + conversion.from
         + ' to ' + conversion.to + ': '
         + (conversion.auto ? String.fromCodePoint(0x2705) : String.fromCodePoint(0x274c));
@@ -573,6 +593,18 @@ function buildReplyMarkup(conversion) {
             {
                 text: buttonText,
                 callback_data: JSON.stringify(conversion)
+            }
+        ]]
+    });
+}
+
+function buildCancelOperationReplyMarkup() {
+    let buttonText = cancelOperation;
+    return JSON.stringify({
+        inline_keyboard: [[
+            {
+                text: buttonText,
+                callback_data: JSON.stringify({ cancel: true })
             }
         ]]
     });
@@ -612,7 +644,10 @@ function showConversionOptions(chatId, chatType, messageId, from, formats) {
                     .replace(/\./g, '_') + ' (<i>' + f.outputformat + '</i>)')
                 .join('\n')
         ).join('\n\n');
-    let options = { parse_mode: 'html' };
+    let options = {
+        parse_mode: 'html',
+        reply_markup: buildCancelOperationReplyMarkup()
+    };
     if (chatType !== 'private') {
         options.reply_to_message_id = messageId;
     }
