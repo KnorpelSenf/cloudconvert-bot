@@ -78,6 +78,10 @@ const conversionError = 'The conversion could not be performed. See the details 
 const unknownError = 'Something went wrong. Sorry for that. You may contact \
 @KnorpelSenf because of this.';
 
+const invalidApiKey = 'Your API key is invalid! Use /apikey to set a new key. Restarting \
+the bot with /start clears the API key and returns you to using the account shared among \
+all bot users.\n\nThis is the invalid API key you provided:\n'
+
 // Prevent zeit.co from restarting the bot
 https.createServer().listen(3000);
 
@@ -148,8 +152,8 @@ slimbot.on('message', message => {
     } else if (message.hasOwnProperty('text')) {
 
         let text = message.text;
+        let options = { original: text };
         let lowerText = text.toLowerCase();
-        let options = {};
 
         if (message.hasOwnProperty('reply_to_message')) {
             let reply = message.reply_to_message;
@@ -318,7 +322,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
     } else if (command.startsWith('/feedback')) {
         slimbot.sendMessage(chatId, helpmsgFeedback, { parse_mode: 'html' });
     } else if (command.startsWith('/apikey')) {
-        let apiKey = command.substring('/apikey'.length).trim();
+        let apiKey = options.original.substring('/apikey'.length).trim();
         if (apiKey.startsWith('@')) {
             apiKey = apiKey.substring(botName.length + 1);
         }
@@ -387,6 +391,7 @@ function handleFile(chatId, chatType, messageId, fileId) {
     collection.findOne(chatFilter, (err, doc) => {
         if (err) debugLog(err); else {
             let to;
+            let converted = false;
             if (doc && doc.hasOwnProperty('task')) {
                 let task = doc.task;
                 if (task.hasOwnProperty('to')) {
@@ -394,6 +399,7 @@ function handleFile(chatId, chatType, messageId, fileId) {
                 }
             }
             if (to) {
+                converted = true;
                 convertFile(chatId, chatType, messageId, fileId, to);
             } else {
                 let update = { 'task': { 'file_id': fileId } };
@@ -403,7 +409,6 @@ function handleFile(chatId, chatType, messageId, fileId) {
                 let from = getExtension(response.result.file_path);
                 collection.findOne(chatFilter, { projection: { auto: 1 } }, (err, doc) => {
                     if (err) debugLog(err); else {
-                        let converted = false;
                         if (doc && doc.hasOwnProperty('auto')) {
                             let autoConversions = doc.auto.filter(c => c.from === from);
                             if (autoConversions.length > 0) {
@@ -449,9 +454,11 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                     slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
                     debugLog(err);
                 } else {
+                    let apiKey = undefined;
                     let cc = cloudconvert;
                     if (doc && doc.hasOwnProperty('api_key')) {
-                        cc = new CloudConvert(doc.api_key);
+                        apiKey = doc.api_key;
+                        cc = new CloudConvert(apiKey);
                     }
                     cc.createProcess({
                         "inputformat": from,
@@ -461,6 +468,12 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                             if (err.code === 400) {
                                 slimbot.editMessageText(chatId, statusMessage.result.message_id, unsupportedConversion
                                     + ' (' + from + ' to ' + to + ')');
+                            } else if (err.code === 403) {
+                                slimbot.editMessageText(chatId, statusMessage.result.message_id, invalidApiKey
+                                    + '<pre>' + apiKey + '</pre>', { parse_mode: 'html' });
+                            } else if (err.code === 422) {
+                                slimbot.editMessageText(chatId, statusMessage.result.message_id, conversionError
+                                    + ' (' + from + ' to ' + to + ')\n\n' + err.message);
                             } else {
                                 slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
                                 debugLog(err);
