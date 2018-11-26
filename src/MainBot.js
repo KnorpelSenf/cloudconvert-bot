@@ -80,7 +80,11 @@ const unknownError = 'Something went wrong. Sorry for that. You may contact \
 
 const invalidApiKey = 'Your API key is invalid! Use /apikey to set a new key. Restarting \
 the bot with /start clears the API key and returns you to using the account shared among \
-all bot users.\n\nThis is the invalid API key you provided:\n'
+all bot users.\n\nThis is the invalid API key you provided:\n';
+
+const noMoreConversionMinutes = 'It looks like there is no free conversions remaining! \
+Check /balance!\n\nYou will automatically be provided with 25 more free conversions \
+within the next 24 hours.';
 
 // Prevent zeit.co from restarting the bot
 https.createServer().listen(3000);
@@ -468,6 +472,8 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                             if (err.code === 400) {
                                 slimbot.editMessageText(chatId, statusMessage.result.message_id, unsupportedConversion
                                     + ' (' + from + ' to ' + to + ')');
+                            } else if (err.code === 402) {
+                                slimbot.editMessageText(chatId, statusMessage.result.message_id, noMoreConversionMinutes);
                             } else if (err.code === 403) {
                                 slimbot.editMessageText(chatId, statusMessage.result.message_id, invalidApiKey
                                     + '<pre>' + apiKey + '</pre>', { parse_mode: 'html' });
