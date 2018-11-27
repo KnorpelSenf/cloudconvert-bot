@@ -4,6 +4,7 @@ const assert = require('assert');
 const MongoClient = require('mongodb').MongoClient;
 const fs = require('fs');
 const path = require('path');
+const prettyBytes = require('pretty-bytes');
 
 const helpmsgPrivate = '<b>Hi there!</b>\nI can help you convert anything to anything! \
 I connect to www.cloudconvert.com to do this. Just send me a file and I will tell \
@@ -32,11 +33,19 @@ without witchcraft. All you need to do is to follow these three steps:\n\
 <b>3)</b> Get back to this chat and send /apikey. Paste the API key into this chat.\n\
 Now every single operation of this bot will work based on your new Cloud Convert account! \
 Resetting the bot with /start clears the API key from the database. This will return you to \
-the account shared among all bot users.';
+the account shared among all bot users.\n\nBy providing an API key, you help contributing to the \
+bot by taking load off the shared account. That\'s why you will receive an extra gift (like \
+getting more free conversions wasn\'t enough!). Once you provided your API key, I will tell \
+you the name of a secret bot command to find out even more about the files you send me.';
 
 const helpmsgBalanceWithApiKey = 'You have connected your personal Cloud Convert account with this bot! \
 You can check its balance with /balance.\n\n\
 You connected this bot by providing the following API key (thanks again!):';
+
+const validatingApiKey = 'Validating ...';
+
+const cannotSetApiKey = 'This API key does not seem to be valid! Did you follow the steps under \
+/the_more_the_merrier?';
 
 const helpmsgBuyMinutes = 'If you need to perform even more conversions, you can buy conversion minutes \
 at www.cloudconvert.com. This bot will automatically use them if available. However, please remember \
@@ -62,6 +71,9 @@ https://telegram.me/storebot?start=cloud_convert_bot';
 
 const sendApiKey = 'Perfect! Now send me the API key!';
 
+const helpmsgInfo = 'Use this command when responding to a file! \
+I will then tell you all file information (meta data) I know.';
+
 const helpmsgConvert = 'Use this command when responding to a file! \
 I will then list all possible conversions for that.';
 
@@ -75,7 +87,10 @@ const helpmsgText = 'Send me a file to convert it!';
 
 const apiKeyProvided = 'Thank you for providing the API key! Your own account is now ready \
 and set up. By no longer relying on the default account, you help making the bot more useful \
-for everyone out there!';
+for everyone out there!\n\nI promised to unveil a hidden bot command, and I like to keep \
+promises! Here we go: whenever you provided a file, send /info to get detailed information \
+about your files. Beware, a lot of things are pretty technical there, but there\'s also a \
+bunch of cool facts you probably didn\'t know. How awesome is that?! Check it out!';
 
 const unsupportedConversion = 'This conversion is not supported!';
 const conversionError = 'The conversion could not be performed. See the details below.';
@@ -307,7 +322,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
         slimbot.sendMessage(chatId, operationCancelled);
     } else if (command.startsWith('/balance')) {
         let chatFilter = { _id: chatId };
-        db.collection('tasks').findOne(chatFilter, null, (err, doc) => {
+        db.collection('tasks').findOne(chatFilter, (err, doc) => {
             if (err) debugLog(err); else {
                 let apiKey = process.env.CLOUD_CONVERT_API_TOKEN;
                 if (doc && doc.hasOwnProperty('api_key')) {
@@ -327,7 +342,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
         });
     } else if (command.startsWith('/the_more_the_merrier')) {
         let chatFilter = { _id: chatId };
-        db.collection('tasks').findOne(chatFilter, null, (err, doc) => {
+        db.collection('tasks').findOne(chatFilter, (err, doc) => {
             if (err) debugLog(err); else {
                 let response;
                 if (doc && doc.hasOwnProperty('api_key')) {
@@ -352,6 +367,29 @@ function handleCommand(chatId, chatType, messageId, command, options) {
                 parse_mode: 'html',
                 reply_to_message_id: messageId,
                 reply_markup: JSON.stringify({ force_reply: true, selective: true })
+            });
+        }
+    } else if (command.startsWith('/info')) {
+        if (options.hasOwnProperty('file_id')) {
+            let fileId = options.file_id;
+            findFileInfoByFileId(chatId, fileId);
+        } else {
+            let chatFilter = { _id: chatId };
+            db.collection('tasks').findOne(chatFilter, (err, doc) => {
+                if (err) debugLog(err); else {
+                    let fileId;
+                    if (doc && doc.hasOwnProperty('task')) {
+                        let task = doc.task;
+                        if (task.hasOwnProperty('file_id')) {
+                            fileId = task.file_id;
+                        }
+                    }
+                    if (fileId) {
+                        findFileInfoByFileId(chatId, fileId);
+                    } else {
+                        slimbot.sendMessage(chatId, helpmsgInfo);
+                    }
+                }
             });
         }
     } else if (command.startsWith('/convert')) {
@@ -425,7 +463,9 @@ function handleFile(chatId, chatType, messageId, fileId) {
                 collection.updateOne(chatFilter, { $set: update }, null, err => { if (err) debugLog(err); });
             }
             slimbot.getFile(fileId).then(response => {
-                let from = getExtension(response.result.file_path);
+                let result = response.result;
+                let from = getExtension(result.file_path);
+                let size = result.file_size;
                 collection.findOne(chatFilter, { projection: { auto: 1 } }, (err, doc) => {
                     if (err) debugLog(err); else {
                         if (doc && doc.hasOwnProperty('auto')) {
@@ -436,7 +476,7 @@ function handleFile(chatId, chatType, messageId, fileId) {
                             }
                         }
                         if (!converted && chatType === 'private') {
-                            findConversionOptions(chatId, chatType, messageId, from);
+                            findConversionOptions(chatId, chatType, messageId, from, size);
                         }
                     }
                 });
@@ -520,7 +560,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                                     db.collection('tasks').findOne({
                                         _id: chatId,
                                         auto: conversion
-                                    }, null, (err, doc) => {
+                                    }, (err, doc) => {
                                         if (err) {
                                             slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
                                             debugLog(err);
@@ -578,6 +618,40 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
     });
 }
 
+function findFileInfoByFileId(chatId, fileId) {
+    slimbot.getFile(fileId).then(response => {
+        let filePath = response.result.file_path;
+        let from = getExtension(filePath);
+        let url = 'https://api.telegram.org/file/bot' + process.env.BOT_API_TOKEN + '/' + filePath;
+        cloudconvert.createProcess({
+            'inputformat': from,
+            'outputformat': from,
+            'mode': 'info'
+        }, (err, process) => {
+            if (err) debugLog(err); else {
+                process.start({
+                    'mode': 'info',
+                    'input': 'download',
+                    'file': url
+                }, (err, process) => {
+                    if (err) debugLog(err); else {
+                        process.wait((err, process) => {
+                            if (err) debugLog(err); else {
+                                let message = '';
+                                let info = process.data.info;
+                                for (key in info) {
+                                    message += '<b>' + key + '</b>: ' + JSON.stringify(info[key], null, 4) + '\n';
+                                }
+                                slimbot.sendMessage(chatId, message, { parse_mode: 'html' });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    });
+}
+
 function clearTask(chatId) {
     let chatFilter = { _id: chatId };
     let update = { 'task': {} };
@@ -610,31 +684,31 @@ function buildCancelOperationReplyMarkup() {
     });
 }
 
-function findConversionOptionsByFileId(chatId, chatType, messageId, fileId) {
+function findConversionOptionsByFileId(chatId, chatType, messageId, fileId, size) {
     slimbot.getFile(fileId).then(response => {
         let from = getExtension(response.result.file_path);
-        findConversionOptions(chatId, chatType, messageId, from);
+        findConversionOptions(chatId, chatType, messageId, from, size);
     });
 }
 
-function findConversionOptions(chatId, chatType, messageId, from) {
+function findConversionOptions(chatId, chatType, messageId, from, size) {
     https.get('https://api.cloudconvert.com/conversiontypes?inputformat=' + from, res => {
         let data = '';
         res.on('data', chunk => data += chunk);
         res.on('end', () => {
             let formats = JSON.parse(data);
-            showConversionOptions(chatId, chatType, messageId, from, formats);
+            showConversionOptions(chatId, chatType, messageId, from, formats, size);
         });
     }).on("error", err => debugLog(err));
 }
 
-function showConversionOptions(chatId, chatType, messageId, from, formats) {
+function showConversionOptions(chatId, chatType, messageId, from, formats, size) {
     let categories = formats.map(f => f.group).reduce((a, b) => {
         if (a.indexOf(b) < 0)
             a.push(b);
         return a;
     }, []);
-    let message = 'Awesome! I can convert ' + from + ' to:\n'
+    let message = 'Awesome! I can convert this ' + from + (size ? ' (' + prettyBytes(size) + ')' : '') + ' to:\n'
         + categories.map(c =>
             '<b>' + c + '</b>\n'
             + formats.filter(f => f.group === c)
@@ -674,12 +748,30 @@ function unregisterChat(chatId) {
 }
 
 function saveApiKey(chatId, apiKey) {
-    let chatFilter = { _id: chatId };
-    let update = { 'api_key': apiKey };
-    db.collection('tasks').updateOne(chatFilter, { $set: update }, null, err => {
-        if (err) debugLog(err); else {
-            slimbot.sendMessage(chatId, apiKeyProvided, { parse_mode: 'html' });
-        }
+    slimbot.sendMessage(chatId, validatingApiKey).then(statusMessage => {
+        let messageId = statusMessage.result.message_id;
+        https.get('https://api.cloudconvert.com/user?apikey=' + apiKey, res => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                let response = JSON.parse(data);
+                let user = response.user;
+                if (user) {
+                    let chatFilter = { _id: chatId };
+                    let update = { 'api_key': apiKey };
+                    db.collection('tasks').updateOne(chatFilter, { $set: update }, null, err => {
+                        if (err) {
+                            debugLog(err);
+                            slimbot.editMessageText(chatId, messageId, unknownError);
+                        } else {
+                            slimbot.editMessageText(chatId, messageId, '<b>' + user + '</b>\n' + apiKeyProvided, { parse_mode: 'html' });
+                        }
+                    });
+                } else {
+                    slimbot.editMessageText(chatId, messageId, cannotSetApiKey);
+                }
+            });
+        }).on("error", () => slimbot.editMessageText(chatId, messageId, unknownError));
     });
 }
 
