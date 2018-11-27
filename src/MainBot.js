@@ -111,8 +111,9 @@ https.createServer().listen(3000);
 const CloudConvert = require('cloudconvert');
 const cloudconvert = new CloudConvert(process.env.CLOUD_CONVERT_API_TOKEN);
 
+const botApiToken = process.env.BOT_API_TOKEN;
 const Slimbot = require('slimbot');
-const slimbot = new Slimbot(process.env.BOT_API_TOKEN);
+const slimbot = new Slimbot(botApiToken);
 
 var botId;
 var botName;
@@ -538,7 +539,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
                                 debugLog(err);
                             }
                         } else {
-                            let url = 'https://api.telegram.org/file/bot' + process.env.BOT_API_TOKEN + '/' + filePath;
+                            let url = 'https://api.telegram.org/file/bot' + botApiToken + '/' + filePath;
                             process.start({
                                 "input": "download",
                                 "file": url,
@@ -622,7 +623,7 @@ function findFileInfoByFileId(chatId, fileId) {
     slimbot.getFile(fileId).then(response => {
         let filePath = response.result.file_path;
         let from = getExtension(filePath);
-        let url = 'https://api.telegram.org/file/bot' + process.env.BOT_API_TOKEN + '/' + filePath;
+        let url = 'https://api.telegram.org/file/bot' + botApiToken + '/' + filePath;
         cloudconvert.createProcess({
             'inputformat': from,
             'outputformat': from,
