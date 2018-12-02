@@ -6,28 +6,54 @@ const fs = require('fs');
 const path = require('path');
 const prettyBytes = require('pretty-bytes');
 
-const helpmsgPrivate = '<b>Hi there!</b>\nI can help you convert anything to anything! \
-I connect to www.cloudconvert.com to do this. Just send me a file and I will tell \
-you everything I can do with it!\n\n\
-\
-Telegram restricts bots (like me) to send and receive files with more than 20 MB \
-in size. This means that you will have to visit the website yourself if you need \
-to convert larger files.\n\n\
-\
-You have up to 25 conversions per day for free. Type /balance to find out more.';
+const helpmsgPrivate = '<b>Hi there!</b>\nI can help you with file conversions!\n\
+<b>tl;dr</b>: Just send me your file to convert.\n\n\
+I support 218 different file formats and I know how to handle media of any kind (<i>audio \
+files, documents, photos, stickers, videos, voice notes and video notes</i>). It usually \
+takes just a few seconds or maybe some minutes to perform a conversion. Just send me the \
+file and I will respond with a list of all possible conversions. I am confident that \
+your format will be among them!\n\n\
+<b>I will do all of this for free.</b> However, I cannot provide an unlimited number of \
+conversions every day without anyone being charged for that.\nIf you just need to convert that one \
+file, you do not need to worry about this, that should work right out of the box. If you \
+need to convert A LOT OF files, please consider <i>setting up an account</i> \
+(see /the_more_the_merrier). It is very important, otherwise this bot would not work. Also, send \
+/limitations to find out about the limitations this bot has.\n\n\
+You can add this bot to a group chat, too! I support automatic file conversions! However, you \
+should definitely set up an account before you do <i>that</i>, that\'d be great!';
 
-const helpmsgGroups = '<b>Hi there!</b>\nMy name is Cloud Convert Bot and I can help you \
-with file conversions of any kind! Respond to any file in this group with /convert and \
-I will list the possible conversions. (You can also send the format directly, e. g. /mp4. \
-Just make sure to <i>respond</i> to the file. Or just send the command directly as a \
-caption!)\n\n\
-To activate auto-conversions for a file type, hit the button under a converted file.';
+const helpmsgStartGroups = '<b>Hi there!</b>\nMy name is Cloud Convert Bot and I can help \
+you with file conversions! Type /help for a quick intro. Don\'t forget to set up your account: \
+/the_more_the_merrier';
 
-const helpmsgBalance = 'All users of this bot share a common pool of 25 conversions per day. \
+const helpmsgGroups = '<b>Hi there!</b>\nMy name is Cloud Convert Bot and I can help \
+you with file conversions!\nI will not spam you with any messages or any converted \
+files (unless you ask nicely). There is two ways to tell me that I should convert a \
+file for you:\n  1) <i>Reply</i> to a file someone sends. Reply with the target format \
+directly (e. g. /mp4) or send /convert to see possible formats. I will use the most \
+recent file if you do not hit reply for any message.\n  2) <i>Send a caption</i> when \
+you send the file, e. g. /mp4 to convert to MP4.\n\nOnce the conversion is completed, \
+you can enable <b>auto-conversions</b>. If you enable auto-conversions for a file type, \
+I will automatically repeat this conversion for all files of the same type.\n\n\
+<b>The most awesome feature</b> is that you can set up your own account. This bot can \
+work for some time without an account, but if you use the bot regularly, setting up an \
+account <i>is really important</i> because you can get waaay more free conversions like \
+that. Set it up with /the_more_the_merrier. This way, you can avoid some /limitations.';
+
+const helpmsgLimitations = 'Currently there is <b>two limitations</b>. First: you can only convert \
+a few files a day. Second: you can only convert files up a certain size.\n\nBecause all users \
+of this bot share a common pool of 25 conversions per day (check the balance with /balance), you \
+cannot convert more than 25 files per day. <b>The good thing</b> is: you simply need to set up \
+an account and BOOM this limit is gone! See /the_more_the_merrier for that!\n\nTelegram does not \
+allow bots (like me) to download files with more than 20 MB in size or upload files with more \
+than 50 MB in size. This limit cannot be changed. If you need to convert larger files, you could \
+visit cloudconvert.com. Sorry!';
+
+const helpmsgSetUpAccount = 'All users of this bot share a common pool of 25 conversions per day. \
 You can check the balance with /balance.\n\n\
-You can <b>claim your own extra 25 free conversions per day</b>! No one else will be able to \
-impact this counter. You will not have to pay anything for this and it works entirely \
-without witchcraft. All you need to do is to follow these three steps:\n\
+Why restrict yourself? You can <b>claim your own extra 25 free conversions per day</b>! \
+No one else will be able to impact this counter. You will not have to pay anything for this \
+and it works entirely without witchcraft. All you need to do is to follow these three steps:\n\
 <b>1)</b> Create your own Cloud Convert account <a href="https://cloudconvert.com/register">here</a>.\n\
 <b>2)</b> Visit the <a href="https://cloudconvert.com/dashboard/api">dashboard</a> and copy the API key.\n\
 <b>3)</b> Get back to this chat and send /apikey. Paste the API key into this chat.\n\
@@ -36,11 +62,16 @@ Resetting the bot with /start clears the API key from the database. This will re
 the account shared among all bot users.\n\nBy providing an API key, you help contributing to the \
 bot by taking load off the shared account. That\'s why you will receive an extra gift (like \
 getting more free conversions wasn\'t enough!). Once you provided your API key, I will tell \
-you the name of a secret bot command to find out even more about the files you send me.';
+you the name of a secret bot command to find out even more about the files you send me.\n\n\
+Please note that this bot or its dev is in no way associated with cloudconvert.com. They just \
+offer free file conversions and they have a neat way to connect bots to that service. They\'re \
+based in Munich and you do not need to worry about privacy concerns or ads or "we miss you" \
+bullshit. Remeber that connecting your own account to this bot is very important for this bot \
+to function.';
 
-const helpmsgBalanceWithApiKey = 'You have connected your personal Cloud Convert account with this bot! \
-You can check its balance with /balance.\n\n\
-You connected this bot by providing the following API key (thanks again!):';
+const helpmsgBalanceWithApiKey = 'Yay! You have connected your personal Cloud Convert account with \
+this bot! Thank you! You can check its balance with /balance.\n\n\
+You connected this bot by providing the following API key (thanks!):';
 
 const validatingApiKey = 'Validating ...';
 
@@ -57,8 +88,8 @@ so you never know. If you know JavaScript, you can check out the \
 <a href="https://github.com/KnorpelSenf/cloudconvert-bot">source code</a> \
 to verify that something as bad as this won\'t ever happen.';
 
-const helpmsgAddedToGroup = '<b>Hi there!</b>\nHit /help for an introduction or contact \
-@KnorpelSenf if you have any questions.';
+const helpmsgAddedToGroup = '<b>Hi!</b>\nHit /help for a quick intro. Contact @KnorpelSenf for \
+questions. And don\'t forget to set up an account! /the_more_the_merrier';
 
 const autoConversionSaved = 'Saved.';
 
@@ -71,10 +102,10 @@ https://telegram.me/storebot?start=cloud_convert_bot';
 
 const sendApiKey = 'Perfect! Now send me the API key!';
 
-const helpmsgInfo = 'Use this command when responding to a file! \
+const helpmsgInfo = 'Use this command in reply to a file! \
 I will then tell you all file information (meta data) I know.';
 
-const helpmsgConvert = 'Use this command when responding to a file! \
+const helpmsgConvert = 'Use this command in reply to a file! \
 I will then list all possible conversions for that.';
 
 const helpmsgFile = 'Alright, now send me a file to be converted to ';
@@ -238,23 +269,24 @@ slimbot.on('message', message => {
                 let command;
                 if (message.hasOwnProperty('reply_to_message')) {
                     let reply = message.reply_to_message;
-                    if (reply.hasOwnProperty('text')) {
-                        let text = reply.text;
-                        if (reply.hasOwnProperty('entities')
-                            && reply.entities[0].type === 'bot_command'
-                            && (text.indexOf('@') < 0 || text.endsWith(botName))) {
-                            command = text;
-                        }
+                    if (reply.hasOwnProperty('text')
+                        && reply.hasOwnProperty('entities')
+                        && reply.entities[0].type === 'bot_command'
+                        && message.entities[0].offset === 0
+                        && (text.indexOf('@') < 0 || text.endsWith(botName))) {
+                        command = reply.text;
                     }
                 } else if (message.hasOwnProperty('caption')) {
                     let caption = message.caption;
                     if (message.hasOwnProperty('caption_entities')
                         && message.caption_entities[0].type === 'bot_command'
+                        && message.entities[0].offset === 0
                         && (caption.indexOf('@') < 0 || caption.endsWith(botName))) {
                         command = caption;
                     }
                 }
                 if (command) {
+                    command = command.toLowerCase();
                     let atIndex = command.indexOf('@');
                     if (atIndex >= 0)
                         command = command.substring(1, atIndex);
@@ -309,7 +341,13 @@ slimbot.on('callback_query', query => {
 function handleCommand(chatId, chatType, messageId, command, options) {
     if (command.startsWith('/start')) {
         registerChat(chatId);
-        slimbot.sendMessage(chatId, helpmsgPrivate, { parse_mode: 'html' });
+        let response;
+        if (chatType === 'private') {
+            response = helpmsgPrivate;
+        } else {
+            response = helpmsgStartGroups;
+        }
+        slimbot.sendMessage(chatId, response, { parse_mode: 'html' });
     } else if (command.startsWith('/help')) {
         let response;
         if (chatType === 'private') {
@@ -349,13 +387,15 @@ function handleCommand(chatId, chatType, messageId, command, options) {
                 if (doc && doc.hasOwnProperty('api_key')) {
                     response = helpmsgBalanceWithApiKey + '\n<pre>' + doc.api_key + '</pre>\n\n' + helpmsgBuyMinutes;
                 } else {
-                    response = helpmsgBalance;
+                    response = helpmsgSetUpAccount;
                 }
                 slimbot.sendMessage(chatId, response, { parse_mode: 'html' });
             }
         });
     } else if (command.startsWith('/feedback')) {
         slimbot.sendMessage(chatId, helpmsgFeedback, { parse_mode: 'html' });
+    } else if (command.startsWith('/limitations')) {
+        slimbot.sendMessage(chatId, helpmsgLimitations, { parse_mode: 'html' });
     } else if (command.startsWith('/apikey')) {
         let apiKey = options.original.substring('/apikey'.length).trim();
         if (apiKey.startsWith('@')) {
@@ -713,7 +753,6 @@ function showConversionOptions(chatId, chatType, messageId, from, formats, size)
         + categories.map(c =>
             '<b>' + c + '</b>\n'
             + formats.filter(f => f.group === c)
-                .filter(f => f.outputformat !== from) // we cannot set conversion parameters so this would be useless
                 .map(f => '/' + f.outputformat
                     .replace(/ /g, "_")
                     .replace(/\./g, '_') + ' (<i>' + f.outputformat + '</i>)')
