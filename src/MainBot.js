@@ -280,7 +280,7 @@ slimbot.on('message', message => {
                     let caption = message.caption;
                     if (message.hasOwnProperty('caption_entities')
                         && message.caption_entities[0].type === 'bot_command'
-                        && message.entities[0].offset === 0
+                        && message.caption_entities[0].offset === 0
                         && (caption.indexOf('@') < 0 || caption.endsWith(botName))) {
                         command = caption;
                     }
