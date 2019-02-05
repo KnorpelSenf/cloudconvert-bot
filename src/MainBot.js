@@ -777,14 +777,12 @@ function registerChat(chatId) {
     let chatFilter = { _id: chatId };
     let collection = db.collection('tasks');
     collection.deleteOne(chatFilter, null, () =>
-        collection.insertOne({ _id: chatId }, null, () =>
-            collection.countDocuments().then(c => debugLog('Add! Number of used chats: ' + c))));
+        collection.insertOne({ _id: chatId }));
 }
 
 function unregisterChat(chatId) {
     let collection = db.collection('tasks');
-    collection.deleteOne({ _id: chatId }, null, () =>
-        collection.countDocuments().then(c => debugLog('Remove! Number of used chats: ' + c)));
+    collection.deleteOne({ _id: chatId });
 }
 
 function saveApiKey(chatId, apiKey) {
@@ -816,6 +814,7 @@ function saveApiKey(chatId, apiKey) {
 }
 
 function debugLog(err) {
-    console.log(err);
-    slimbot.sendMessage(-1001218552688, '<pre>' + JSON.stringify(err) + '</pre>', { parse_mode: 'html' });
+    console.trace(err);
+    let log = JSON.stringify({ err: err, trace: new Error().stack });
+    slimbot.sendMessage(-1001218552688, '<pre>' + log + '</pre>', { parse_mode: 'html' });
 }
