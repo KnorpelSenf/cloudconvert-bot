@@ -7,12 +7,9 @@ const path = require('path');
 const prettyBytes = require('pretty-bytes');
 
 const helpmsgPrivate = '<b>Hi there!</b>\nI can help you with file conversions!\n\
-<b>tl;dr</b>: Just send me your file to convert.\n\n\
+<b>TL;DR</b>: Just send me your file to convert. /help\n\n\
 I support 218 different file formats and I know how to handle media of any kind (<i>audio \
-files, documents, photos, stickers, videos, voice notes and video notes</i>). It usually \
-takes just a few seconds or maybe some minutes to perform a conversion. Just send me the \
-file and I will respond with a list of all possible conversions. I am confident that \
-your format will be among them!\n\n\
+files, documents, photos, stickers, videos, voice notes and video notes</i>).\n\n\
 <b>I will do all of this for free.</b> However, I cannot provide an unlimited number of \
 conversions every day without anyone being charged for that.\nIf you just need to convert that one \
 file, you do not need to worry about this, that should work right out of the box. If you \
