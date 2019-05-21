@@ -4,8 +4,8 @@
     "dependencies": {
         "cloudconvert": "^1.1.2",
         "dotenv": "latest",
-        "mongodb": "^3.1.13",
-        "pretty-bytes": "^5.1.0",
+        "mongodb": "^3.2.5",
+        "pretty-bytes": "^5.2.0",
         "slimbot": "latest"
     },
     "scripts": {
