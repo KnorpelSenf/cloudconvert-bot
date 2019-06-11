@@ -131,7 +131,8 @@ all bot users.\n\nThis is the invalid API key you provided:\n';
 
 const noMoreConversionMinutes = 'It looks like there is no free conversions remaining! \
 Check /balance!\n\nYou will automatically be provided with 25 more free conversions \
-within the next 24 hours.';
+within the next 24 hours. If you don\'t want to wait, can convert your file right now. \
+You just need to follow the steps under /the_more_the_merrier.';
 
 // Prevent zeit.co from restarting the bot
 https.createServer().listen(3000);
