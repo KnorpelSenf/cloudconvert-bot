@@ -52,7 +52,7 @@ Why restrict yourself? You can <b>claim your own extra 25 free conversions per d
 No one else will be able to impact this counter. You will not have to pay anything for this \
 and it works entirely without witchcraft. All you need to do is to follow these three steps:\n\
 <b>1)</b> Create your own Cloud Convert account <a href="https://cloudconvert.com/register">here</a>.\n\
-<b>2)</b> Visit the <a href="https://cloudconvert.com/dashboard/api">dashboard</a> and copy the API key.\n\
+<b>2)</b> Visit the <a href="https://cloudconvert.com/dashboard/api/v1/keys">dashboard</a> and copy the API key.\n\
 <b>3)</b> Get back to this chat and send /apikey. Paste the API key into this chat.\n\
 Now every single operation of this bot will work based on your new Cloud Convert account! \
 Resetting the bot with /start clears the API key from the database. This will return you to \
