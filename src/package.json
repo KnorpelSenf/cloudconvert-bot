@@ -2,8 +2,11 @@
     "name": "cloudconvert-bot",
     "version": "0.2.0",
     "dependencies": {
+        "axios": "^0.19.0",
+        "bluebird": "^3.5.5",
         "cloudconvert": "^1.1.2",
         "dotenv": "latest",
+        "js-yaml": "^3.13.1",
         "mongodb": "^3.2.5",
         "pretty-bytes": "^5.2.0",
         "slimbot": "latest"
