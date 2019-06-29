@@ -116,6 +116,7 @@ module.exports.unsupportedConversion = 'This conversion is not supported!';
 module.exports.conversionError = 'The conversion could not be performed. See the details below.';
 module.exports.unknownError = 'Something went wrong. Sorry for that. You may contact \
 @KnorpelSenf because of this.';
+module.exports.unknownErrorPerhaps = 'Internal error. Did your conversion go well? If not, do not hesitate to contact @KnorpelSenf.'
 
 module.exports.invalidApiKey = 'Your API key is invalid! Use /apikey to set a new key. Restarting \
 the bot with /start clears the API key and returns you to using the account shared among \

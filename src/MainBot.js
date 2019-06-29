@@ -371,7 +371,7 @@ function handleFile(chatId, chatType, messageId, fileId) {
     let collection = db.collection('tasks');
     collection.findOne(chatFilter).then(doc => {
         let to;
-        let converted = false; //////////// !!!!!!!!!!!!!
+        let converted = false;
         if (doc && doc.hasOwnProperty('task')) {
             let task = doc.task;
             if (task.hasOwnProperty('to')) {
@@ -390,7 +390,7 @@ function handleFile(chatId, chatType, messageId, fileId) {
             slimbot.getFile(fileId),
             collection.findOne(chatFilter, { projection: { auto: 1 } })
         ]);
-    }).spread((converted, response, doc) => {
+    }).then(([converted, response, doc]) => { // does not support spread, use array destructuring (= pattern matching?)
         let result = response.result;
         let from = getExtension(result.file_path);
         let size = result.file_size;
@@ -475,10 +475,11 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
             filePath
         ]);
     }).spread((conversion, process, filePath) => {
-        let tmpPath = '/tmp/' + path.basename(filePath, conversion.from) + '.' + to;
+        let tmpPath = '/tmp/' + path.basename(filePath, conversion.from) + to;
         return Promise.all([
             conversion,
-            // process.download is not even conform to the convention that the last parameter is the callback -> use Promise constructor instead
+            // process.download is not even conform to the convention that the last parameter is the callback
+            // -> can't use promisify, must use Promise constructor instead
             new Promise((resolve, reject) => {
                 process.download(fs.createWriteStream(tmpPath), null, (err, process) => {
                     if (err)
@@ -490,38 +491,61 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
             tmpPath
         ]);
     }).spread((conversion, process, tmpPath) => {
+        process.delete();
         let options = {
             reply_to_message_id: messageId,
             reply_markup: buildAutoConversionReplyMarkup(conversion)
         };
         let file = fs.createReadStream(tmpPath);
-        slimbot.sendChatAction(chatId, 'upload_document');
-        process.delete();
-        slimbot.deleteMessage(chatId, statusMessageContainer.statusMessage.result.message_id);
-        slimbot.sendDocument(chatId, file, options);
-        return Promise.all([conversion, tmpPath]);
-    }).spread(conversion, tmpPath => {
+        let fileSentContainer = { sent: false };
+        // Count the number of times we send the chat action "upload_document".
+        // Stop after one minute maximum.
+        let chatActionSenderCount = 0;
+        let chatActionSender = () => {
+            chatActionSenderCount++;
+            if (!fileSentContainer.sent && chatActionSenderCount < 12) {
+                slimbot.sendChatAction(chatId, 'upload_document');
+                setTimeout(chatActionSender, 5000);
+            }
+        }
+        chatActionSender();
+        let statusMessageId = statusMessageContainer.statusMessage.result.message_id;
+        statusMessageContainer.statusMessage = undefined;
+        slimbot.deleteMessage(chatId, statusMessageId);
+        return Promise.all([
+            conversion,
+            tmpPath,
+            fileSentContainer,
+            slimbot.sendDocument(chatId, file, options)
+        ]);
+    }).spread((conversion, tmpPath, fileSentContainer, request) => {
+        fileSentContainer.sent = true;
         db.collection('stats').insertOne({
             chat_id: chatId,
             conversion: conversion,
             completed: new Date()
         });
-        fs.unlink(tmpPath);
+        fs.unlink(tmpPath, err => { if (err) throw err });
     }).catch(err => {
         let statusMessage = statusMessageContainer.statusMessage;
-        if (err.code === 400) {
-            slimbot.editMessageText(chatId, statusMessage.result.message_id, _.unsupportedConversion
-                + ' (' + from + ' to ' + to + ')');
-        } else if (err.code === 402) {
-            slimbot.editMessageText(chatId, statusMessage.result.message_id, _.noMoreConversionMinutes);
-        } else if (err.code === 403) {
-            slimbot.editMessageText(chatId, statusMessage.result.message_id, _.invalidApiKey
-                + '<pre>' + apiKey + '</pre>', { parse_mode: 'html' });
-        } else if (err.code === 422) {
-            slimbot.editMessageText(chatId, statusMessage.result.message_id, _.conversionError
-                + ' (' + from + ' to ' + to + ')\n\n' + err.message);
+        if (statusMessage) {
+            if (err.code === 400) {
+                slimbot.editMessageText(chatId, statusMessage.result.message_id, _.unsupportedConversion
+                    + ' (' + from + ' to ' + to + ')');
+            } else if (err.code === 402) {
+                slimbot.editMessageText(chatId, statusMessage.result.message_id, _.noMoreConversionMinutes);
+            } else if (err.code === 403) {
+                slimbot.editMessageText(chatId, statusMessage.result.message_id, _.invalidApiKey
+                    + '<pre>' + apiKey + '</pre>', { parse_mode: 'html' });
+            } else if (err.code === 422) {
+                slimbot.editMessageText(chatId, statusMessage.result.message_id, _.conversionError
+                    + ' (' + from + ' to ' + to + ')\n\n' + err.message);
+            } else {
+                slimbot.editMessageText(chatId, statusMessage.result.message_id, _.unknownError);
+                debugLog(err);
+            }
         } else {
-            slimbot.editMessageText(chatId, statusMessage.result.message_id, _.unknownError);
+            slimbot.sendMessage(chatId, _.unknownErrorPerhaps)
             debugLog(err);
         }
     });
