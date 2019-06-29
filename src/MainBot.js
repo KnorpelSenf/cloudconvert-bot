@@ -1,27 +1,37 @@
 // environment vars
 require('dotenv').config();
 
-const https = require('https');
-const axios = require('axios');
-const Promise = require('bluebird');
+import { get } from 'axios';
+import Promise, { all, promisify } from 'bluebird';
 
-const MongoClient = require('mongodb').MongoClient;
-const fs = require('fs');
-const path = require('path');
+import { MongoClient } from 'mongodb';
+import { createWriteStream, createReadStream, unlink } from 'fs';
+import { basename } from 'path';
 
-const prettyBytes = require('pretty-bytes');
+import prettyBytes from 'pretty-bytes';
 
 // texts and strings
-const _ = require('./strings');
+import {
+    helpmsgAddedToGroup, sendApiKey, autoConversionSaved,
+    operationCancelled, helpmsgPrivate, helpmsgStartGroups,
+    helpmsgGroups, remainingConversions, customApiKeyInstruction,
+    helpmsgBalanceWithApiKey, helpmsgBuyMinutes, helpmsgSetUpAccount,
+    helpmsgFeedback, helpmsgLimitations, helpmsgInfo,
+    helpmsgConvert, helpmsgFile, helpmsgText,
+    unsupportedConversion, noMoreConversionMinutes, invalidApiKey,
+    conversionError, unknownError, unknownErrorPerhaps,
+    cancelOperation, validatingApiKey, apiKeyProvided,
+    cannotSetApiKey
+} from './strings';
 
 // Prevent zeit.co from restarting the bot
-https.createServer().listen(3000);
+require('https').createServer().listen(3000);
 
-const CloudConvert = require('cloudconvert');
+import CloudConvert from 'cloudconvert';
 const cloudconvert = new CloudConvert(process.env.CLOUD_CONVERT_API_TOKEN);
 
 const botApiToken = process.env.BOT_API_TOKEN;
-const Slimbot = require('slimbot');
+import Slimbot from 'slimbot';
 const slimbot = new Slimbot(botApiToken);
 
 var botId; // id of self
@@ -71,7 +81,7 @@ slimbot.on('message', message => {
         let botWasAdded = message.new_chat_members.some(user => user.id === botId);
         if (botWasAdded) {
             registerChat(chatId);
-            slimbot.sendMessage(chatId, _.helpmsgAddedToGroup, { parse_mode: 'html' });
+            slimbot.sendMessage(chatId, helpmsgAddedToGroup, { parse_mode: 'html' });
         }
 
     } else if (message.hasOwnProperty('left_chat_member')) {
@@ -92,7 +102,7 @@ slimbot.on('message', message => {
         if (message.hasOwnProperty('reply_to_message')) {
             // text message was a reply
             let reply = message.reply_to_message;
-            if (reply.text === _.sendApiKey) {
+            if (reply.text === sendApiKey) {
                 saveApiKey(chatId, text);
                 return;
             } else {
@@ -202,8 +212,8 @@ slimbot.on('callback_query', query => {
         if (data.cancel) {
             // Conversion was cancelled
             clearTask(chatId);
-            slimbot.answerCallbackQuery(query.id, { text: _.autoConversionSaved });
-            slimbot.editMessageText(chatId, messageId, _.operationCancelled);
+            slimbot.answerCallbackQuery(query.id, { text: autoConversionSaved });
+            slimbot.editMessageText(chatId, messageId, operationCancelled);
         } else {
             // Auto-conversion was toggled
             let conversion = {
@@ -219,7 +229,7 @@ slimbot.on('callback_query', query => {
                 update = { $addToSet: element };
             }
             db.collection('tasks').updateOne(chatFilter, update, null).then(obj => {
-                slimbot.answerCallbackQuery(query.id, { text: _.autoConversionSaved });
+                slimbot.answerCallbackQuery(query.id, { text: autoConversionSaved });
                 if (obj && obj.modifiedCount > 0) {
                     conversion.auto = !data.auto;
                     slimbot.editMessageReplyMarkup(chatId, messageId, buildAutoConversionReplyMarkup(conversion));
@@ -236,22 +246,22 @@ function handleCommand(chatId, chatType, messageId, command, options) {
         registerChat(chatId);
         let response;
         if (chatType === 'private') {
-            response = _.helpmsgPrivate;
+            response = helpmsgPrivate;
         } else {
-            response = _.helpmsgStartGroups;
+            response = helpmsgStartGroups;
         }
         slimbot.sendMessage(chatId, response, { parse_mode: 'html' });
     } else if (command.startsWith('/help')) {
         let response;
         if (chatType === 'private') {
-            response = _.helpmsgPrivate;
+            response = helpmsgPrivate;
         } else {
-            response = _.helpmsgGroups;
+            response = helpmsgGroups;
         }
         slimbot.sendMessage(chatId, response, { parse_mode: 'html' });
     } else if (command.startsWith('/cancel')) {
         clearTask(chatId);
-        slimbot.sendMessage(chatId, _.operationCancelled);
+        slimbot.sendMessage(chatId, operationCancelled);
     } else if (command.startsWith('/balance')) {
         let chatFilter = { _id: chatId };
         db.collection('tasks').findOne(chatFilter).then(doc => {
@@ -259,27 +269,27 @@ function handleCommand(chatId, chatType, messageId, command, options) {
             if (doc && doc.hasOwnProperty('api_key')) {
                 apiKey = doc.api_key;
             }
-            return axios.get('https://api.cloudconvert.com/user?apikey=' + apiKey);
+            return get('https://api.cloudconvert.com/user?apikey=' + apiKey);
         }).then(response => {
             let balance = response.data.minutes;
-            slimbot.sendMessage(chatId, _.remainingConversions + ': <b>'
-                + balance + '</b>\n\n' + _.customApiKeyInstruction, { parse_mode: 'html' });
+            slimbot.sendMessage(chatId, remainingConversions + ': <b>'
+                + balance + '</b>\n\n' + customApiKeyInstruction, { parse_mode: 'html' });
         }).catch(debugLog);
     } else if (command.startsWith('/the_more_the_merrier')) {
         let chatFilter = { _id: chatId };
         db.collection('tasks').findOne(chatFilter).then(doc => {
             let response;
             if (doc && doc.hasOwnProperty('api_key')) {
-                response = _.helpmsgBalanceWithApiKey + '\n<pre>' + doc.api_key + '</pre>\n\n' + _.helpmsgBuyMinutes;
+                response = helpmsgBalanceWithApiKey + '\n<pre>' + doc.api_key + '</pre>\n\n' + helpmsgBuyMinutes;
             } else {
-                response = _.helpmsgSetUpAccount;
+                response = helpmsgSetUpAccount;
             }
             slimbot.sendMessage(chatId, response, { parse_mode: 'html' });
         }).catch(debugLog);
     } else if (command.startsWith('/feedback')) {
-        slimbot.sendMessage(chatId, _.helpmsgFeedback, { parse_mode: 'html' });
+        slimbot.sendMessage(chatId, helpmsgFeedback, { parse_mode: 'html' });
     } else if (command.startsWith('/limitations')) {
-        slimbot.sendMessage(chatId, _.helpmsgLimitations, { parse_mode: 'html' });
+        slimbot.sendMessage(chatId, helpmsgLimitations, { parse_mode: 'html' });
     } else if (command.startsWith('/apikey')) {
         let apiKey = options.original.substring('/apikey'.length).trim();
         if (apiKey.startsWith('@')) {
@@ -288,7 +298,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
         if (apiKey && apiKey.length > 0) {
             saveApiKey(chatId, apiKey);
         } else {
-            slimbot.sendMessage(chatId, _.sendApiKey, {
+            slimbot.sendMessage(chatId, sendApiKey, {
                 parse_mode: 'html',
                 reply_to_message_id: messageId,
                 reply_markup: JSON.stringify({ force_reply: true, selective: true })
@@ -311,7 +321,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
                 if (fileId) {
                     findFileInfoByFileId(chatId, fileId);
                 } else {
-                    slimbot.sendMessage(chatId, _.helpmsgInfo);
+                    slimbot.sendMessage(chatId, helpmsgInfo);
                 }
             }).catch(debugLog);
         }
@@ -323,7 +333,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
             db.collection('tasks').updateOne(chatFilter, { $set: update }).catch(debugLog);
             findConversionOptionsByFileId(chatId, chatType, messageId, fileId);
         } else {
-            slimbot.sendMessage(chatId, _.helpmsgConvert);
+            slimbot.sendMessage(chatId, helpmsgConvert);
         }
     } else {
         // if the command doesn't match anything we know, we assume it to be a file extension
@@ -351,7 +361,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
                 } else {
                     let update = { 'task': { 'to': to } };
                     db.collection('tasks').updateOne(chatFilter, { $set: update }).catch(debugLog);
-                    slimbot.sendMessage(chatId, _.helpmsgFile + to + '!', { reply_markup: buildCancelOperationReplyMarkup() });
+                    slimbot.sendMessage(chatId, helpmsgFile + to + '!', { reply_markup: buildCancelOperationReplyMarkup() });
                 }
             }).catch(debugLog);
         }
@@ -361,7 +371,7 @@ function handleCommand(chatId, chatType, messageId, command, options) {
 // Called if a regular text message was received
 function handleText(chatId, chatType, messageId, text) {
     if (chatType === 'private') {
-        slimbot.sendMessage(chatId, _.helpmsgText);
+        slimbot.sendMessage(chatId, helpmsgText);
     }
 }
 
@@ -385,7 +395,7 @@ function handleFile(chatId, chatType, messageId, fileId) {
             let update = { 'task': { 'file_id': fileId } };
             collection.updateOne(chatFilter, { $set: update }).catch(debugLog);
         }
-        return Promise.all([
+        return all([
             converted,
             slimbot.getFile(fileId),
             collection.findOne(chatFilter, { projection: { auto: 1 } })
@@ -424,7 +434,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
 
     let chatFilter = { _id: chatId };
     let statusMessageContainer = { statusMessage: undefined };
-    Promise.all([
+    all([
         slimbot.sendMessage(chatId, String.fromCodePoint(0x1f914) /* <- thinking face emoji */, {
             reply_to_message_id: messageId
         }),
@@ -444,8 +454,8 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
             from: from,
             to: to
         };
-        return Promise.all([
-            Promise.promisify(cc.createProcess, { context: cc })({
+        return all([
+            promisify(cc.createProcess, { context: cc })({
                 "inputformat": from,
                 "outputformat": to
             }),
@@ -454,10 +464,10 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
         ]);
     }).then(([process, filePath, conversion]) => {
         let url = 'https://api.telegram.org/file/bot' + botApiToken + '/' + filePath;
-        return Promise.all([
+        return all([
             filePath,
             conversion,
-            Promise.promisify(process.start, { context: process })({
+            promisify(process.start, { context: process })({
                 "input": "download",
                 "file": url,
                 "outputformat": to
@@ -469,19 +479,19 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
         ]);
     }).then(([filePath, conversion, process, doc]) => {
         conversion.auto = doc ? true : false; // used for stats and reply markup
-        return Promise.all([
+        return all([
             conversion,
-            Promise.promisify(process.wait, { context: process })(),
+            promisify(process.wait, { context: process })(),
             filePath
         ]);
     }).then(([conversion, process, filePath]) => {
-        let tmpPath = '/tmp/' + path.basename(filePath, conversion.from) + to;
-        return Promise.all([
+        let tmpPath = '/tmp/' + basename(filePath, conversion.from) + to;
+        return all([
             conversion,
             // process.download is not even conform to the convention that the last parameter is the callback
             // -> can't use promisify, must use Promise constructor instead
             new Promise((resolve, reject) => {
-                process.download(fs.createWriteStream(tmpPath), null, (err, process) => {
+                process.download(createWriteStream(tmpPath), null, (err, process) => {
                     if (err)
                         reject(err)
                     else
@@ -496,7 +506,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
             reply_to_message_id: messageId,
             reply_markup: buildAutoConversionReplyMarkup(conversion)
         };
-        let file = fs.createReadStream(tmpPath);
+        let file = createReadStream(tmpPath);
         let fileSentContainer = { sent: false };
         // Count the number of times we send the chat action "upload_document".
         // Stop after one minute maximum.
@@ -512,7 +522,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
         let statusMessageId = statusMessageContainer.statusMessage.result.message_id;
         statusMessageContainer.statusMessage = undefined;
         slimbot.deleteMessage(chatId, statusMessageId);
-        return Promise.all([
+        return all([
             conversion,
             tmpPath,
             fileSentContainer,
@@ -525,27 +535,27 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
             conversion: conversion,
             completed: new Date()
         });
-        fs.unlink(tmpPath, err => { if (err) throw err });
+        unlink(tmpPath, err => { if (err) throw err });
     }).catch(err => {
         let statusMessage = statusMessageContainer.statusMessage;
         if (statusMessage) {
             if (err.code === 400) {
-                slimbot.editMessageText(chatId, statusMessage.result.message_id, _.unsupportedConversion
+                slimbot.editMessageText(chatId, statusMessage.result.message_id, unsupportedConversion
                     + ' (' + from + ' to ' + to + ')');
             } else if (err.code === 402) {
-                slimbot.editMessageText(chatId, statusMessage.result.message_id, _.noMoreConversionMinutes);
+                slimbot.editMessageText(chatId, statusMessage.result.message_id, noMoreConversionMinutes);
             } else if (err.code === 403) {
-                slimbot.editMessageText(chatId, statusMessage.result.message_id, _.invalidApiKey
+                slimbot.editMessageText(chatId, statusMessage.result.message_id, invalidApiKey
                     + '<pre>' + apiKey + '</pre>', { parse_mode: 'html' });
             } else if (err.code === 422) {
-                slimbot.editMessageText(chatId, statusMessage.result.message_id, _.conversionError
+                slimbot.editMessageText(chatId, statusMessage.result.message_id, conversionError
                     + ' (' + from + ' to ' + to + ')\n\n' + err.message);
             } else {
-                slimbot.editMessageText(chatId, statusMessage.result.message_id, _.unknownError);
+                slimbot.editMessageText(chatId, statusMessage.result.message_id, unknownError);
                 debugLog(err);
             }
         } else {
-            slimbot.sendMessage(chatId, _.unknownErrorPerhaps)
+            slimbot.sendMessage(chatId, unknownErrorPerhaps)
             debugLog(err);
         }
     });
@@ -553,7 +563,7 @@ function convertFile(chatId, chatType, messageId, fileId, to) {
 
 function findFileInfoByFileId(chatId, fileId) {
     let chatFilter = { _id: chatId };
-    Promise.all([
+    all([
         db.collection('tasks').findOne(chatFilter, { projection: { api_key: 1 } }),
         slimbot.getFile(fileId)
     ]).then(([doc, response]) => {
@@ -565,22 +575,22 @@ function findFileInfoByFileId(chatId, fileId) {
         let filePath = response.result.file_path;
         let from = getExtension(filePath);
         let url = 'https://api.telegram.org/file/bot' + botApiToken + '/' + filePath;
-        return Promise.all([
+        return all([
             url,
-            Promise.promisify(cc.createProcess, { context: cc })({
+            promisify(cc.createProcess, { context: cc })({
                 'inputformat': from,
                 'outputformat': from,
                 'mode': 'info'
             })
         ]);
     }).then(([url, process]) => {
-        return Promise.promisify(process.start, { context: process })({
+        return promisify(process.start, { context: process })({
             'mode': 'info',
             'input': 'download',
             'file': url
         });
     }).then(process => {
-        return Promise.promisify(process.wait, { context: process })();
+        return promisify(process.wait, { context: process })();
     }).then(process => {
         let message = '';
         let info = process.data.info;
@@ -612,7 +622,7 @@ function buildAutoConversionReplyMarkup(conversion) {
 }
 
 function buildCancelOperationReplyMarkup() {
-    let buttonText = _.cancelOperation;
+    let buttonText = cancelOperation;
     return JSON.stringify({
         inline_keyboard: [[
             {
@@ -631,8 +641,8 @@ function findConversionOptionsByFileId(chatId, chatType, messageId, fileId, size
 }
 
 function findConversionOptions(chatId, chatType, messageId, from, size) {
-    axios.get('https://api.cloudconvert.com/conversiontypes?inputformat=' + from).then(response => {
-        let formats = JSON.parse(response.data);
+    get('https://api.cloudconvert.com/conversiontypes?inputformat=' + from).then(response => {
+        let formats = response.data;
         showConversionOptions(chatId, chatType, messageId, from, formats, size);
     }).catch(debugLog);
 }
@@ -681,11 +691,11 @@ function unregisterChat(chatId) {
 }
 
 function saveApiKey(chatId, apiKey) {
-    slimbot.sendMessage(chatId, _.validatingApiKey).then(statusMessage => {
+    slimbot.sendMessage(chatId, validatingApiKey).then(statusMessage => {
         let messageId = statusMessage.result.message_id;
-        return Promise.all([
+        return all([
             messageId,
-            axios.get('https://api.cloudconvert.com/user?apikey=' + apiKey)
+            get('https://api.cloudconvert.com/user?apikey=' + apiKey)
         ]);
     }).then(([messageId, response]) => {
         let user = response.data.user;
@@ -693,18 +703,17 @@ function saveApiKey(chatId, apiKey) {
             let chatFilter = { _id: chatId };
             let update = { 'api_key': apiKey };
             db.collection('tasks').updateOne(chatFilter, { $set: update }).then(() => {
-                slimbot.editMessageText(chatId, messageId, '<b>' + user + '</b>\n' + _.apiKeyProvided, { parse_mode: 'html' });
+                slimbot.editMessageText(chatId, messageId, '<b>' + user + '</b>\n' + apiKeyProvided, { parse_mode: 'html' });
             });
         } else {
-            slimbot.editMessageText(chatId, messageId, _.cannotSetApiKey);
+            slimbot.editMessageText(chatId, messageId, cannotSetApiKey);
         }
     }).catch(() => {
-        slimbot.editMessageText(chatId, messageId, _.unknownError);
+        slimbot.editMessageText(chatId, messageId, unknownError);
     });
 }
 
 function debugLog(err) {
-    console.trace(err);
-    let log = JSON.stringify({ err: err, trace: new Error().stack }, null, 2);
-    slimbot.sendMessage(-1001218552688 /* <- debug log channel */ * /, '<pre>' + log + '</pre > ', { parse_mode: 'html' });
+    let log = JSON.stringify({ err, trace: new Error().stack }, null, 2);
+    slimbot.sendMessage(-1001218552688 /* <- debug log channel */, '<pre>' + log + '</pre > ', { parse_mode: 'html' });
 }
