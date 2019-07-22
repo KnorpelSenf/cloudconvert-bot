@@ -3,15 +3,19 @@
     "version": "1.0.0",
     "dependencies": {
         "axios": "^0.19.0",
-        "bluebird": "^3.5.5",
         "cloudconvert": "^1.1.2",
         "dotenv": "latest",
-        "esm": "^3.2.25",
         "mongodb": "^3.2.7",
         "pretty-bytes": "^5.2.0",
         "slimbot": "latest"
     },
     "scripts": {
-        "start": "node -r esm MainBot.js"
+        "start": "tsc && node built/app.js",
+        "build": "tsc",
+        "clean": "rm -r built/*"
+    },
+    "devDependencies": {
+        "@types/mongodb": "^3.1.29",
+        "typescript": "^3.5.3"
     }
 }

@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "charset": "utf8",
+        "declaration": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "keyofStringsOnly": true,
+        "module": "commonjs",
+        "newLine": "lf",
+        "noFallthroughCasesInSwitch": true,
+        "noUnusedParameters": true,
+        "outDir": "./built/",
+        "removeComments": true,
+        "sourceMap": true,
+        "strict": true,
+        "target": "es6"
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": []
+}
