@@ -4,6 +4,7 @@ import treeify from 'treeify';
 import * as strings from '../../strings';
 import * as cloudconvert from '../models/cloud-convert';
 import TaskContext from '../models/task-context';
+import * as controllerUtils from './apikey-controller';
 import * as utils from './controller-utils';
 const debug = d('bot:contr:command');
 
@@ -76,9 +77,10 @@ export async function apiKey(ctx: TaskContext): Promise<void> {
         if (ctx.state.command !== undefined
             && ctx.state.command.args.length > 0
             && ctx.state.command.args[0] !== undefined) {
-            ctx.db.saveApiKey(ctx.message.chat, ctx.state.command.args[0]);
+            const key = ctx.state.command.args[0];
+            await controllerUtils.receivedApiKey(ctx, key);
         } else {
-            ctx.replyWithHTML(strings.sendApiKey, {
+            await ctx.replyWithHTML(strings.sendApiKey, {
                 reply_to_message_id: ctx.message.message_id,
                 reply_markup: { force_reply: true, selective: true },
             });

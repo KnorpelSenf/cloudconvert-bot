@@ -3,6 +3,7 @@ import Telegraf from 'telegraf';
 import * as apiKeys from './controllers/apikey-controller';
 import * as callbacks from './controllers/callback-controller';
 import * as commands from './controllers/command-controller';
+import * as fallbacks from './controllers/fallback-controller';
 import * as files from './controllers/file-controller';
 import * as groups from './controllers/group-controller';
 import commandArgs from './middlewares/command-args';
@@ -112,7 +113,7 @@ export default class Bot {
         this.bot.command('convert', commands.convert);
 
         // Text messages are used for every file format command (like /mp4) and when providing an API key
-        this.bot.on(['text'], files.handleTextMessage, apiKeys.handleTextMessage);
+        this.bot.on(['text'], files.handleTextMessage, apiKeys.handleTextMessage, fallbacks.help);
 
         // Respond to callback queries
         this.bot.on('callback_query', callbacks.handleCallbackQuery);

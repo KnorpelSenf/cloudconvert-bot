@@ -23,27 +23,30 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
             }
         }
 
-        if (apiKey.length > 0) {
-            const statusMessage = await ctx.replyWithHTML(strings.validatingApiKey, {
-                reply_to_message_id: ctx.message.message_id,
-            });
-            const username = await validateApiKey(apiKey);
-            const valid = username !== undefined;
-            if (valid) {
-                await ctx.db.saveApiKey(ctx.message.chat, apiKey);
-                await ctx.telegram.editMessageText(statusMessage.chat.id,
-                    statusMessage.message_id,
-                    undefined,
-                    '<b>' + username + '</b>\n' + strings.apiKeyProvided,
-                    { parse_mode: 'HTML' });
-            } else {
-                await ctx.telegram.editMessageText(statusMessage.chat.id,
-                    statusMessage.message_id,
-                    undefined,
-                    strings.invalidApiKey + apiKey);
-            }
-        }
+        await receivedApiKey(ctx, apiKey);
     } else if (next !== undefined) {
         return next();
+    }
+}
+export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
+    if (ctx.message !== undefined && apiKey.length > 0) {
+        const statusMessage = await ctx.replyWithHTML(strings.validatingApiKey, {
+            reply_to_message_id: ctx.message.message_id,
+        });
+        const username = await validateApiKey(apiKey);
+        const valid = username !== undefined;
+        if (valid) {
+            await ctx.db.saveApiKey(ctx.message.chat, apiKey);
+            await ctx.telegram.editMessageText(statusMessage.chat.id,
+                statusMessage.message_id,
+                undefined,
+                '<b>' + username + '</b>\n' + strings.apiKeyProvided,
+                { parse_mode: 'HTML' });
+        } else {
+            await ctx.telegram.editMessageText(statusMessage.chat.id,
+                statusMessage.message_id,
+                undefined,
+                strings.invalidApiKey + apiKey);
+        }
     }
 }
