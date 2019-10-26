@@ -142,11 +142,12 @@ export async function convertFile(fileUrl: string, outputformat: string, key?: s
         // in order to be able to use some proper async/await. Thanks.
         p.wait(promiseResolver(resolve, reject), REFRESH_INTERVAL);
     });
-    const file = (await filePromise).path;
+    const file = await filePromise;
     p = await new Promise(async (resolve, reject) => {
-        p.download(fs.createWriteStream(file), undefined, promiseResolver(resolve, reject));
+        p.download(fs.createWriteStream(file.path), undefined, promiseResolver(resolve, reject));
     });
-    return file;
+    file.cleanup();
+    return file.path;
 }
 
 function getCloudConvert(key?: string): CloudConvert {
