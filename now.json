@@ -3,7 +3,8 @@
     "env": {
         "BOT_API_TOKEN": "@cloudconvert-bot-api-token",
         "CLOUD_CONVERT_API_TOKEN": "@cloudconvert-api-token",
-        "MONGO_DB_PASSWORD": "@cloudconvert-bot-mongo-db-password"
+        "MONGO_DB_PASSWORD": "@cloudconvert-bot-mongo-db-password",
+        "ADMIN_ID": "-1001218552688"
     },
     "scale": {
         "bru1": {

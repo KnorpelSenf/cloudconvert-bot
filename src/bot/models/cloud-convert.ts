@@ -1,0 +1,176 @@
+import axios from 'axios';
+import CloudConvert, { Process, ProcessData } from 'cloudconvert';
+import d from 'debug';
+import fs from 'fs';
+import { Array, Literal, Null, Number, Record, Static, String, Union } from 'runtypes';
+import tmp from 'tmp-promise';
+import * as strings from '../../strings';
+import * as util from '../helpers/get-file-extension';
+const debug = d('bot:converter');
+
+const UserType = Record({
+    user: Union(String, Null), // Null iff shared account (that's the dev's personal account)
+    minutes: Number,
+    output: Array(
+        Union(
+            Literal('googledrive'),
+            Literal('dropbox'),
+            Literal('box'),
+            Literal('onedrive'),
+        ),
+    ),
+});
+type User = Static<typeof UserType>;
+
+const FormatType = Record({
+    inputformat: String,
+    outputformat: String,
+    group: String,
+});
+type Format = Static<typeof FormatType>;
+
+const REFRESH_INTERVAL = 100; // ms
+
+if (process.env.CLOUD_CONVERT_API_TOKEN === undefined) {
+    throw new Error('Please provide a cloudconvert API token in the environment variable CLOUD_CONVERT_API_TOKEN!');
+}
+const ccDefault = new CloudConvert(process.env.CLOUD_CONVERT_API_TOKEN);
+
+export async function validateApiKey(key: string): Promise<string | undefined> {
+    const user = await getNonDefaultUser(key);
+    // Three options:           invalid      valid        shared key
+    return user === undefined ? undefined : (user.user || undefined);
+}
+
+/**
+ * Return the number of conversion minutes for the account as specified by getUser.
+ * @param key cloud convert account API key
+ */
+export async function getBalance(key?: string): Promise<number> {
+    const user = await getUser(key);
+    return user.minutes;
+}
+
+/**
+ * Returns a User object for the given API key of a cloud convert account.
+ * If no key is given, the default account is used. If the key is invalid,
+ * another request will be performed and the default account's balance will be returned instead.
+ */
+async function getUser(key?: string): Promise<User> {
+    return key === undefined
+        ? await getDefaultUser()
+        : await getNonDefaultUser(key) || getDefaultUser();
+}
+
+async function getNonDefaultUser(key: string): Promise<User | undefined> {
+    try {
+        const response = await axios.get('https://api.cloudconvert.com/v1/user?apikey=' + key);
+        return UserType.check(response.data);
+    } catch (e) {
+        return undefined;
+    }
+}
+
+async function getDefaultUser(): Promise<User> {
+    const response = await axios.get('https://api.cloudconvert.com/v1/user?apikey='
+        + process.env.CLOUD_CONVERT_API_TOKEN);
+    const defaultUser = UserType.check(response.data);
+    return {
+        user: null,
+        minutes: defaultUser.minutes,
+        output: [],
+    };
+}
+
+// The following functions are so freaking ugly.
+// TODO: Upgrade to cloudconvert v2 once it's stable
+// https://cloudconvert.com/blog/api-v2
+
+export async function getFileInfo(fileUrl: string, key?: string): Promise<ProcessData | undefined> {
+    const ext = util.ext(fileUrl);
+    const cc = getCloudConvert(key);
+
+    let p: Process = await new Promise((resolve, reject) => {
+        cc.createProcess({
+            inputformat: ext,
+            outputformat: ext,
+            mode: 'info',
+        }, promiseResolver(resolve, reject));
+    });
+    p = await new Promise((resolve, reject) => {
+        p.start({
+            input: 'download',
+            file: fileUrl,
+            mode: 'info',
+        }, promiseResolver(resolve, reject));
+    });
+    const result: any = await new Promise((resolve, reject) => {
+        p.wait(promiseResolver(resolve, reject), REFRESH_INTERVAL);
+    });
+    return result === undefined ? undefined : result.data;
+}
+
+export async function listPossibleConversions(ext: string): Promise<Format[]> {
+    const response = await axios.get('https://api.cloudconvert.com/conversiontypes?inputformat=' + ext);
+    return Array(FormatType).check(response.data);
+}
+
+export async function convertFile(fileUrl: string, outputformat: string, key?: string): Promise<string> {
+    const inputformat = util.ext(fileUrl);
+    const cc = getCloudConvert(key);
+
+    const filePromise = tmp.file({ postfix: '.' + outputformat });
+
+    let p: Process = await new Promise((resolve, reject) => {
+        cc.createProcess({
+            inputformat,
+            outputformat,
+        }, promiseResolver(resolve, reject));
+    });
+    p = await new Promise((resolve, reject) => {
+        p.start({
+            input: 'download',
+            file: fileUrl,
+            outputformat,
+        }, promiseResolver(resolve, reject));
+    });
+    p = await new Promise((resolve, reject) => {
+        // The following line is one of the reasons why using the cloudconvert api
+        // is so ugly in v1. The callback is not the last parameter. This is against
+        // the convention. As a result, we cannot promisify the function.
+        // Instead, we have to use this weird way to wrap all functions
+        // in order to be able to use some proper async/await. Thanks.
+        p.wait(promiseResolver(resolve, reject), REFRESH_INTERVAL);
+    });
+    const file = (await filePromise).path;
+    p = await new Promise(async (resolve, reject) => {
+        p.download(fs.createWriteStream(file), undefined, promiseResolver(resolve, reject));
+    });
+    return file;
+}
+
+function getCloudConvert(key?: string): CloudConvert {
+    return key === undefined ? ccDefault : new CloudConvert(key);
+}
+
+// We cannot use `util.promisify` due to the missing context.
+// Use this helper function instead of adding bluebird as a dependency.
+function promiseResolver<T>(resolve: (value?: T | PromiseLike<T> | undefined) => void,
+                        /**/reject: (reason?: any) => void):
+                        /**/(err: Error, t: T) => void {
+    return (err: Error, t: T) => { if (err) { reject(err); } else { resolve(t); } };
+}
+
+export function describeErrorCode(err: Error & { code: number }): string {
+    debug(err);
+    switch (err.code) {
+        case 400:
+        case 404:
+            d('err')(new Error().stack);
+            return strings.unknownError;
+        case 402:
+            return strings.noMoreConversionMinutes;
+        default:
+            throw err;
+    }
+}

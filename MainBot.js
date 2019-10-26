@@ -717,3 +717,260 @@ function debugLog(err) {
     let log = JSON.stringify({ err, trace: new Error().stack }, null, 2);
     slimbot.sendMessage(-1001218552688 /* <- debug log channel */, '<pre>' + log + '</pre > ', { parse_mode: 'html' });
 }
+
+
+
+
+
+
+
+    /*
+
+    private async handleMessage(message: Message): Promise<void> {
+        if (this.processBotWasAdded(message)
+            || this.processBotWasRemoved(message)) {
+            return;
+        }
+
+        const task = await this.db.getTaskInformation(message.chat);
+
+        // Each of the following attempt-methods potentially adds information about the task.
+        // If one of the methods can handle the message entirely on its own, it will
+        // return true as to intercept the chain. This will also prevent a conversion
+        // attempt.
+        //
+        // Example szenario 1: /help was sent -> intercepted -> no need to request a file
+        // Example szenario 2: foo was sent -> not intercepted -> ask user to send a file
+        const intercepted: boolean = this.processReply(task, message)
+            || this.processText(task, message)
+            || this.processMiscellaneous(task, message);
+
+        if (!intercepted) {
+            // Now we can try to perform the task as it might be complete
+            this.tryPerform(task, message);
+        }
+    }
+
+    private processBotWasAdded(message: Message): boolean {
+        if (this.botInfo === undefined) {
+            return false;
+        }
+        const botId = this.botInfo.bot_id;
+        const botWasAdded = message.new_chat_members !== undefined
+            && message.new_chat_members.some(user => user.id === botId);
+        if (botWasAdded) {
+            this.db.registerChat(message.chat);
+            this.bot.sendMessage(message.chat.id, strings.helpmsgAddedToGroup, { parse_mode: 'HTML' });
+        }
+        return botWasAdded;
+    }
+
+    private processBotWasRemoved(message: Message): boolean {
+        if (this.botInfo === undefined) {
+            return false;
+        }
+        const botId = this.botInfo.bot_id;
+        const botWasRemoved = message.left_chat_member !== undefined
+            && message.left_chat_member.id === botId;
+        if (botWasRemoved) {
+            this.db.unregisterChat(message.chat);
+        }
+        return botWasRemoved;
+    }
+
+    private processReply(task: Partial<Task>, message: Message): boolean {
+        const reply = message.reply_to_message;
+        if (reply === undefined) {
+            return false;
+        }
+        if (this.botInfo !== undefined && reply.from !== undefined
+            && reply.from.id === this.botInfo.bot_id && reply.text === strings.sendApiKey) {
+            if (message.text === undefined) {
+                this.bot.sendMessage(message.chat.id, strings.invalidApiKeyType, {
+                    reply_to_message_id: reply.message_id,
+                });
+            } else if (message.text.startsWith('/')) {
+                this.bot.sendMessage(message.chat.id, strings.invalidApiKeyCommand, {
+                    reply_to_message_id: reply.message_id,
+                });
+            } else {
+                this.saveApiKey(message.chat, message.text);
+                return true;
+            }
+        } else {
+            let file: FileBase | undefined;
+            if (reply.photo !== undefined) {
+                file = reply.photo[reply.photo.length - 1];
+            } else {
+                file = reply.audio || reply.document || reply.sticker
+                    || reply.video || reply.voice || reply.video_note;
+            }
+
+            if (file !== undefined) {
+                task.file_id = file.file_id;
+            }
+        }
+        return false;
+    }
+
+    private processText(task: Partial<Task>, message: Message): boolean {
+        const reply = message.reply_to_message;
+        if (this.botInfo !== undefined && reply !== undefined && reply.from !== undefined
+            && reply.from.id === this.botInfo.bot_id && reply.text === strings.sendApiKey) {
+            if (message.text === undefined) {
+                this.bot.sendMessage(message.chat.id, strings.invalidApiKeyType, {
+                    reply_to_message_id: reply.message_id,
+                });
+            } else if (message.text.startsWith('/')) {
+                this.bot.sendMessage(message.chat.id, strings.invalidApiKeyCommand, {
+                    reply_to_message_id: reply.message_id,
+                });
+            } else {
+                this.saveApiKey(message.chat, message.text);
+            }
+            return true;
+        }
+
+        const command = this.extractCommand(message);
+        if (command !== undefined) {
+            return this.processCommand(command, task, message);
+        } else if (message.chat.type === 'private') {
+            this.bot.sendMessage(message.chat.id, strings.helpmsgText);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private processCommand(command: string, task: Partial<Task>, message: Message): boolean {
+        switch (command) {
+            case '/start':
+                this.db.registerChat(message.chat);
+                this.bot.sendMessage(message.chat.id,
+                    message.chat.type === 'private'
+                        ? strings.helpmsgPrivate
+                        : strings.helpmsgStartGroups,
+                    { parse_mode: 'HTML' });
+                break;
+
+            case '/help':
+                this.bot.sendMessage(message.chat.id,
+                    message.chat.type === 'private'
+                        ? strings.helpmsgPrivate
+                        : strings.helpmsgGroups,
+                    { parse_mode: 'HTML' });
+                break;
+
+            case '/cancel':
+                this.db.clearTask(message.chat);
+                this.bot.sendMessage(message.chat.id, strings.operationCancelled);
+                break;
+
+            case '/balance':
+                cloudconvert.getBalance(task.api_key).then(balance =>
+                    this.bot.sendMessage(message.chat.id,
+                        strings.remainingConversions + ': <b>' + balance + '</b>\n\n' + strings.customApiKeyInstruction,
+                        { parse_mode: 'HTML' }),
+                );
+                break;
+
+            case '/the_more_the_merrier':
+                if (task.api_key === undefined) {
+                    this.bot.sendMessage(message.chat.id, strings.helpmsgSetUpAccount);
+                } else {
+                    this.bot.sendMessage(message.chat.id,
+                        strings.helpmsgBalanceWithApiKey
+                        + '\n<pre>' + task.api_key + '</pre>\n\n'
+                        + strings.helpmsgBuyMinutes);
+                }
+                break;
+
+            case '/feedback':
+                this.bot.sendMessage(message.chat.id, strings.helpmsgFeedback, { parse_mode: 'HTML' });
+                break;
+
+            case '/limitations':
+                this.bot.sendMessage(message.chat.id, strings.helpmsgLimitations, { parse_mode: 'HTML' });
+                break;
+
+            case '/apikey':
+                if (message.text !== undefined && this.botInfo !== undefined) {
+                    let apiKey = message.text.substring('/apikey'.length).trim();
+                    if (apiKey.startsWith('@')) {
+                        apiKey = apiKey.substring(this.botInfo.bot_name.length + 1);
+                    }
+                    if (apiKey && apiKey.length > 0) {
+                        this.saveApiKey(message.chat, apiKey);
+                    } else {
+                        this.bot.sendMessage(message.chat.id, strings.sendApiKey, {
+                            parse_mode: 'HTML',
+                            reply_to_message_id: message.message_id,
+                            reply_markup: { force_reply: true, selective: true },
+                        });
+                    }
+                } else { // should never happen
+                    this.bot.sendMessage(message.chat.id, strings.unknownError);
+                }
+                break;
+
+            case '/info':
+                throw new Error('Not implemented yet! Stay tuned!');
+
+            case '/convert':
+                // If this command was used correctly, the reply already provided
+                // the correct file and thus task.file_id should be set.
+                // If not, send back usage instructions.
+                if (task.file_id === undefined) {
+                    this.bot.sendMessage(message.chat.id, strings.helpmsgConvert);
+                }
+                break;
+            default:
+                throw new Error('Not implemented yet');
+        }
+
+        return true; // command intercepted
+    }
+
+    private processMiscellaneous(task: Partial<Task>, message: Message): boolean {
+        return false;
+    }
+
+    private async saveApiKey(chat: Chat, key: string) {
+        const [statusMessage, username] = await Promise.all([
+            this.bot.sendMessage(chat.id, strings.validatingApiKey),
+            cloudconvert.validateApiKey(key),
+        ]);
+        const options = { message_id: statusMessage.message_id };
+        if (username === undefined) {
+            await this.bot.editMessageText(strings.cannotSetApiKey, options);
+        } else {
+            await Promise.all([
+                this.bot.editMessageText('<b>' + username + '</b>\n' + strings.apiKeyProvided, options),
+                this.db.saveApiKey(chat, key),
+            ]);
+        }
+    }
+
+    private extractCommand(message: Message): string | undefined {
+        if (this.botInfo === undefined
+            || message.text === undefined
+            || message.entities === undefined
+            || message.entities.length === 0) {
+            return undefined;
+        }
+        const entity = message.entities[0];
+        if (entity === undefined
+            || entity.type !== 'bot_command'
+            || entity.offset !== 0) {
+            return undefined;
+        }
+        let command = message.text.substring(entity.offset, entity.offset + entity.length);
+        if (command.includes('@')) { // strip potentially included bot name
+            command = command.substring(0, command.indexOf('@'));
+        }
+        return command;
+    }
+
+    private tryPerform(task: Partial<Task>, message: Message) {
+    }
+    */

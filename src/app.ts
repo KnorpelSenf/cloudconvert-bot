@@ -1,16 +1,18 @@
 // enable environment vars
-require('dotenv').config();
+import { config } from 'dotenv';
+config();
 
-// Prevent zeit.co from restarting the bot
-require('https').createServer().listen(3000);
+import d from 'debug';
+const debug = d('app');
 
 import Bot from './bot/bot';
 
-let bot: Bot = new Bot();
+const bot = new Bot();
 try {
-    bot.start();
+    (async () => {
+        await bot.start();
+    })();
+    debug('Bot started.');
 } catch (e) {
-    console.error("Failed to start: " + e);
+    debug('Failed to start: ' + e);
 }
-
-console.log('Bot started.');
