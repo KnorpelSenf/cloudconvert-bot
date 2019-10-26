@@ -114,7 +114,6 @@ async function handleFile(ctx: TaskContext, fileId: string): Promise<void> {
             ]);
         }
     }
-
 }
 
 async function convertFile(ctx: TaskContext, fileId: string, targetFormat: string): Promise<void> {
@@ -135,6 +134,14 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
         ]);
         try {
             file = await cloudconvert.convertFile(fileUrl, targetFormat, task.api_key);
+        } catch (e) {
+            if (e.code === undefined || typeof e.code !== 'number') {
+                d('err')(e);
+                await ctx.reply(strings.unknownError);
+            } else {
+                await ctx.reply(cloudconvert.describeErrorCode(e));
+            }
+            return;
         } finally {
             if (thinkingMessage) {
                 ctx.telegram.deleteMessage(ctx.message.chat.id, thinkingMessage.message_id);
