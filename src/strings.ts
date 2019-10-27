@@ -80,7 +80,7 @@ export const remainingConversions = 'Remaining conversions';
 
 export const customApiKeyInstruction = 'Need to perform more conversions? /contribute';
 
-export const helpmsgFeedback = 'Like this bot? Tell the dev @KnorpelSenf or share you thoughts in the \
+export const helpmsgFeedback = 'Like this bot? Tell the dev @KnorpelSenf or share your thoughts in the \
 discussion group at @cloud_convert_bot_lounge!\n\nThe best way to say thank you is by providing an \
 API key. /contribute';
 
