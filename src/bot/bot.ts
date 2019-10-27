@@ -74,15 +74,15 @@ export default class Bot {
 
         this.bot.context.state = { bot_info: this.botInfo };
 
-        // if (isDevBot) {
-        this.bot.telegram.deleteWebhook();
-        this.bot.startPolling();
-        debug('Bot started using long polling at ' + new Date());
-        // } else {
-        //     this.bot.startWebhook('/' + this.bot.token, null, 3000);
-        //     await this.bot.telegram.setWebhook('https://cloudconvert-bot.appspot.com/' + this.bot.token);
-        //     debug('Bot started using a webhook at ' + new Date());
-        // }
+        if (isDevBot) {
+            await this.bot.telegram.deleteWebhook();
+            this.bot.startPolling();
+            debug('Bot started using long polling at ' + new Date());
+        } else {
+            this.bot.startWebhook('/' + this.bot.token, null, 3000);
+            await this.bot.telegram.setWebhook('https://cloudconvert-bot.appspot.com/' + this.bot.token);
+            debug('Bot started using a webhook at ' + new Date());
+        }
     }
 
     private registerListeners() {
@@ -114,7 +114,7 @@ export default class Bot {
         this.bot.command('convert', commands.convert);
 
         // Text messages are used for every file format command (like /mp4) and when providing an API key
-        this.bot.on(['text'], files.handleTextMessage, apiKeys.handleTextMessage, fallbacks.help);
+        this.bot.on(['text'], files.handleTextMessage, apiKeys.handleTextMessage);
 
         // Respond to callback queries
         this.bot.on('callback_query', callbacks.handleCallbackQuery);
