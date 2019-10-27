@@ -37,6 +37,7 @@ if (process.env.CLOUD_CONVERT_API_TOKEN === undefined) {
 const ccDefault = new CloudConvert(process.env.CLOUD_CONVERT_API_TOKEN);
 
 export async function validateApiKey(key: string): Promise<string | undefined> {
+    debug('Getting non-default user');
     const user = await getNonDefaultUser(key);
     // Three options:           invalid      valid        shared key
     return user === undefined ? undefined : (user.user || undefined);
@@ -64,7 +65,10 @@ async function getUser(key?: string): Promise<User> {
 
 async function getNonDefaultUser(key: string): Promise<User | undefined> {
     try {
+        debug('Performing request');
         const response = await axios.get('https://api.cloudconvert.com/v1/user?apikey=' + key);
+        debug('Response is:');
+        debug(response.data);
         return UserType.check(response.data);
     } catch (e) {
         return undefined;

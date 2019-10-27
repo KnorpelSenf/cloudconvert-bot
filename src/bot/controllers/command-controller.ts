@@ -45,7 +45,7 @@ export async function balance(ctx: TaskContext): Promise<void> {
     debug('/balance');
     if (ctx.chat !== undefined) {
         const minutes = await cloudconvert.getBalance(await ctx.db.getKey(ctx.chat));
-        ctx.replyWithHTML(strings.remainingConversions + ': <b>' + minutes + '</b>\n\n'
+        await ctx.replyWithHTML(strings.remainingConversions + ': <b>' + minutes + '</b>\n\n'
             + strings.customApiKeyInstruction);
     }
 }
@@ -57,18 +57,18 @@ export async function contribute(ctx: TaskContext): Promise<void> {
         const response = userApiKey === undefined
             ? strings.helpmsgSetUpAccount
             : strings.helpmsgBalanceWithApiKey + '\n<pre>' + userApiKey + '</pre>\n\n' + strings.helpmsgBuyMinutes;
-        ctx.replyWithHTML(response);
+        await ctx.replyWithHTML(response);
     }
 }
 
 export async function feedback(ctx: TaskContext): Promise<void> {
     debug('/feedback');
-    ctx.replyWithHTML(strings.helpmsgFeedback);
+    await ctx.replyWithHTML(strings.helpmsgFeedback);
 }
 
 export async function limitations(ctx: TaskContext): Promise<void> {
     debug('/limitations');
-    ctx.replyWithHTML(strings.helpmsgLimitations);
+    await ctx.replyWithHTML(strings.helpmsgLimitations);
 }
 
 export async function apiKey(ctx: TaskContext): Promise<void> {

@@ -29,24 +29,28 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
     }
 }
 export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
+    debug('New key');
     if (ctx.message !== undefined && apiKey.length > 0) {
-        const statusMessage = await ctx.replyWithHTML(strings.validatingApiKey, {
+        debug('Check passed, validating message sending');
+        const statusMessage = await ctx.reply(strings.validatingApiKey, {
             reply_to_message_id: ctx.message.message_id,
         });
+        debug(statusMessage);
+        debug('Validating');
         const username = await validateApiKey(apiKey);
+        debug(username);
+        // TODO: don't send more messages, edit existing ones. Need response from
+        // https://github.com/telegraf/telegraf/issues/784
         const valid = username !== undefined;
         if (valid) {
+            debug('Saving key');
             await ctx.db.saveApiKey(ctx.message.chat, apiKey);
-            await ctx.telegram.editMessageText(statusMessage.chat.id,
-                statusMessage.message_id,
-                undefined,
-                '<b>' + username + '</b>\n' + strings.apiKeyProvided,
-                { parse_mode: 'HTML' });
+            debug('Editing message to success');
+            await ctx.replyWithHTML('<b>' + username + '</b>\n' + strings.apiKeyProvided);
+            debug('Done.');
         } else {
-            await ctx.telegram.editMessageText(statusMessage.chat.id,
-                statusMessage.message_id,
-                undefined,
-                strings.invalidApiKey + apiKey);
+            debug('Editing message to failure.');
+            await ctx.replyWithHTML(strings.invalidApiKey + apiKey);
         }
     }
 }
