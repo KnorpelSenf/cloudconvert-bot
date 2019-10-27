@@ -1,9 +1,9 @@
 import d from 'debug';
+import express from 'express';
 import Telegraf from 'telegraf';
 import * as apiKeys from './controllers/apikey-controller';
 import * as callbacks from './controllers/callback-controller';
 import * as commands from './controllers/command-controller';
-import * as fallbacks from './controllers/fallback-controller';
 import * as files from './controllers/file-controller';
 import * as groups from './controllers/group-controller';
 import commandArgs from './middlewares/command-args';
@@ -79,9 +79,13 @@ export default class Bot {
             this.bot.startPolling();
             debug('Bot started using long polling at ' + new Date());
         } else {
-            this.bot.startWebhook('/' + this.bot.token, null, 3000);
-            await this.bot.telegram.setWebhook('https://cloudconvert-bot.appspot.com/' + this.bot.token);
-            debug('Bot started using a webhook at ' + new Date());
+            const port = process.env.PORT || 8080;
+            const url = 'https://cloudconvert-bot.appspot.com:443/' + this.bot.token;
+            const app = express();
+            app.use(this.bot.webhookCallback('/' + this.bot.token));
+            await this.bot.telegram.setWebhook(url);
+            app.listen(port);
+            debug('Bot started using a webhook at ' + new Date() + ' for URL ' + url);
         }
     }
 

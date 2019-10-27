@@ -1,14 +1,11 @@
 {
     "name": "cloudconvert-bot",
     "version": "2.0.0",
-    "engines": {
-        "node": ">=11.15.0",
-        "npm": ">=6.12.0"
-      },
     "dependencies": {
         "axios": "^0.19.0",
         "cloudconvert": "^1.1.2",
         "dotenv": "^8.2.0",
+        "express": "^4.17.1",
         "mongodb": "^3.3.3",
         "pretty-bytes": "^5.3.0",
         "runtypes": "^4.0.3",
@@ -25,6 +22,7 @@
     "devDependencies": {
         "@types/debug": "^4.1.5",
         "@types/dotenv": "^6.1.1",
+        "@types/express": "^4.17.1",
         "@types/mongodb": "^3.3.6",
         "@types/request": "^2.48.3",
         "@types/tmp": "^0.1.0",
