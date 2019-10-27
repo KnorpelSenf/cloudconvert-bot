@@ -165,9 +165,10 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
             }
             return;
         } finally {
-            if (thinkingMessage) {
-                ctx.telegram.deleteMessage(ctx.message.chat.id, thinkingMessage.message_id);
-            }
+            // TODO: https://github.com/telegraf/telegraf/issues/784
+            // if (thinkingMessage) {
+            //     ctx.telegram.deleteMessage(ctx.message.chat.id, thinkingMessage.message_id);
+            // }
         }
 
         // Upload file, send chat action in the meantime
