@@ -1,11 +1,24 @@
+import d from 'debug';
 import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
+import * as strings from '../../strings';
 import * as util from '../helpers/get-file-extension';
 import { cancelOperationReplyMarkup } from '../helpers/reply-markup-builder';
 import TaskContext from '../models/task-context';
 import * as cloudconvert from './../models/cloud-convert';
 
 export async function printPossibleConversions(ctx: TaskContext, fileId: string): Promise<void> {
-    const fileUrl = await ctx.telegram.getFileLink(fileId);
+    let fileUrl: string;
+    try {
+        fileUrl = await ctx.telegram.getFileLink(fileId);
+    } catch (e) {
+        if (e.code === 400) {
+            await ctx.reply(strings.fileTooBig);
+        } else {
+            d('err')(e);
+            await ctx.reply(strings.unknownError);
+        }
+        return;
+    }
     const ext = util.ext(fileUrl);
     const formats = await cloudconvert.listPossibleConversions(ext);
 

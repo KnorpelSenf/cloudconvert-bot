@@ -115,6 +115,7 @@ your CloudConvert account in this chat! Yay! (If you do not want this, you can r
 
 export const unsupportedConversion = 'This conversion is not supported!';
 export const conversionError = 'The conversion could not be performed. See the details below.';
+export const fileTooBig = 'The file is too big! See /limitations';
 export const unknownError = 'Something went wrong. Sorry for that. You may contact \
 @KnorpelSenf because of this.';
 export const unknownErrorPerhaps = 'Internal error. Did your conversion go well? If not, do not \

@@ -92,8 +92,19 @@ export async function info(ctx: TaskContext): Promise<void> {
     debug('/info');
     const fileId = await utils.getFileIdFromReply(ctx, strings.helpmsgInfo);
     if (ctx.message !== undefined && fileId !== undefined) {
-        const url = await ctx.telegram.getFileLink(fileId);
         let fileInfo: ProcessData | undefined;
+        let url: string;
+        try {
+            url = await ctx.telegram.getFileLink(fileId);
+        } catch (e) {
+            if (e.code === 400) {
+                await ctx.reply(strings.fileTooBig);
+            } else {
+                d('err')(e);
+                await ctx.reply(strings.unknownError);
+            }
+            return;
+        }
         try {
             fileInfo = await cloudconvert.getFileInfo(url, await ctx.db.getKey(ctx.message.chat.id));
         } catch (e) {

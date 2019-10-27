@@ -10,7 +10,7 @@ export default function commandArgs(ctx: TaskContext, next: (() => any) | undefi
         && ctx.message.text !== undefined
         && ctx.message.text.startsWith('/')) {
         const text = ctx.message.text;
-        const match = text.match(/^\/([^\s]+)\s+([\s\S]+)?/);
+        const match = text.match(/^\/([^\s]+)\s?(.+)?/);
         if (match !== null) {
             const raw: string = text;
             const command: string = match[1] ? match[1] : '';

@@ -166,12 +166,15 @@ export function describeErrorCode(err: Error & { code: number }): string {
     debug(err);
     switch (err.code) {
         case 400:
-        case 404:
-            d('err')(new Error().stack);
-            return strings.unknownError;
+            return err.message;
         case 402:
             return strings.noMoreConversionMinutes;
         default:
-            throw err;
+            if (err.message) {
+                return err.message;
+            } else {
+                d('err')(new Error().stack);
+                return strings.unknownError;
+            }
     }
 }

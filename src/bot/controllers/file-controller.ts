@@ -86,7 +86,18 @@ async function handleFile(ctx: TaskContext, fileId: string): Promise<void> {
         const conversions: Array<Promise<void>> = [];
         // Perform all auto-conversions
         if (task.auto !== undefined) {
-            const fileUrl = await ctx.telegram.getFileLink(fileId);
+            let fileUrl: string;
+            try {
+                fileUrl = await ctx.telegram.getFileLink(fileId);
+            } catch (e) {
+                if (e.code === 400) {
+                    await ctx.reply(strings.fileTooBig);
+                } else {
+                    d('err')(e);
+                    await ctx.reply(strings.unknownError);
+                }
+                return;
+            }
             const ext = util.ext(fileUrl);
             conversions.push(...task.auto
                 .filter(c => c.from === ext)
@@ -120,16 +131,27 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
     if (ctx.message !== undefined) {
 
         let fileUrl: string;
+        try {
+            fileUrl = await ctx.telegram.getFileLink(fileId);
+        } catch (e) {
+            if (e.code === 400) {
+                await ctx.reply(strings.fileTooBig);
+            } else {
+                d('err')(e);
+                await ctx.reply(strings.unknownError);
+            }
+            return;
+        }
+
         let task: Partial<Task>;
         let file: string;
 
         // Get info and convert file, show :thinking_face: in the meantime
         let thinkingMessage;
-        [thinkingMessage, fileUrl, task] = await Promise.all([
+        [thinkingMessage, task] = await Promise.all([
             ctx.reply(String.fromCodePoint(0x1f914) /* <- thinking face emoji */, {
                 reply_to_message_id: ctx.message.message_id,
             }),
-            ctx.telegram.getFileLink(fileId),
             ctx.db.getTaskInformation(ctx.message.chat.id),
         ]);
         try {
@@ -160,10 +182,21 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
             auto: task.auto !== undefined
                 && task.auto.some(c => c.from === sourceFormat && c.to === targetFormat),
         };
-        await ctx.replyWithDocument({ source: file }, {
-            reply_to_message_id: ctx.message.message_id,
-            reply_markup: autoConversionReplyMarkup(conversion),
-        });
-        clearInterval(handle);
+        try {
+            await ctx.replyWithDocument({ source: file }, {
+                reply_to_message_id: ctx.message.message_id,
+                reply_markup: autoConversionReplyMarkup(conversion),
+            });
+        } catch (e) {
+            if (e.error_code === 400) {
+                await ctx.reply(strings.fileTooBig);
+            } else {
+                d('err')(e);
+                await ctx.reply(strings.unknownError);
+            }
+            return;
+        } finally {
+            clearInterval(handle);
+        }
     }
 }

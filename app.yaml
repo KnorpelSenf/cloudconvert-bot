@@ -12,4 +12,4 @@ resources:
   disk_size_gb: 1
 network:
   forwarded_ports:
-    - 443
+    - 80
