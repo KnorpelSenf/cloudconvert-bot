@@ -38,7 +38,7 @@ export default class Bot {
         if (token === undefined) {
             throw new Error('No API token provided in environ var BOT_API_TOKEN!');
         }
-        this.bot = new Telegraf(token);
+        this.bot = new Telegraf(token, { telegram: { webhookReply: false } });
 
         // Add database to context object
         this.bot.context.db = this.db;
