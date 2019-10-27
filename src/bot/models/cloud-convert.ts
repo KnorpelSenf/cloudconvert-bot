@@ -150,7 +150,8 @@ export async function convertFile(fileUrl: string, outputformat: string, key?: s
     p = await new Promise(async (resolve, reject) => {
         p.download(fs.createWriteStream(file.path), undefined, promiseResolver(resolve, reject));
     });
-    file.cleanup();
+    file.cleanup(); // don't wait for this to happen
+    p.delete(); // ditto
     return file.path;
 }
 
