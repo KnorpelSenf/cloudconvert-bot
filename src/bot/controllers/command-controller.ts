@@ -6,6 +6,7 @@ import * as cloudconvert from '../models/cloud-convert';
 import TaskContext from '../models/task-context';
 import * as controllerUtils from './apikey-controller';
 import * as utils from './controller-utils';
+import * as files from './file-controller';
 const debug = d('bot:contr:command');
 
 export async function start(ctx: TaskContext): Promise<void> {
@@ -137,8 +138,8 @@ export async function info(ctx: TaskContext): Promise<void> {
 export async function convert(ctx: TaskContext): Promise<void> {
     debug('/convert');
     const fileId = await utils.getFileIdFromReply(ctx, strings.helpmsgConvert);
-    if (ctx.message !== undefined && fileId !== undefined) {
-        await utils.printPossibleConversions(ctx, fileId);
+    if (fileId !== undefined) {
+        await files.setSourceFile(ctx, fileId);
     }
 }
 

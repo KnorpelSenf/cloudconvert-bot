@@ -1,5 +1,4 @@
 import d from 'debug';
-import path from 'path';
 import * as strings from '../../strings';
 import * as util from '../helpers/get-file-extension';
 import { autoConversionReplyMarkup, cancelOperationReplyMarkup } from '../helpers/reply-markup-builder';
@@ -116,14 +115,20 @@ async function handleFile(ctx: TaskContext, fileId: string): Promise<void> {
             await Promise.all(conversions);
         } else {
             // No target format yet, list conversion options
-            const update = {
-                $set: { task: { file_id: fileId } },
-            };
-            await Promise.all([
-                controllerUtils.printPossibleConversions(ctx, fileId),
-                ctx.db.updateTaskInformation(ctx.message.chat, update),
-            ]);
+            await setSourceFile(ctx, fileId);
         }
+    }
+}
+
+export async function setSourceFile(ctx: TaskContext, fileId: string) {
+    if (ctx.message !== undefined) {
+        const update = {
+            $set: { task: { file_id: fileId } },
+        };
+        await Promise.all([
+            controllerUtils.printPossibleConversions(ctx, fileId),
+            ctx.db.updateTaskInformation(ctx.message.chat, update),
+        ]);
     }
 }
 
