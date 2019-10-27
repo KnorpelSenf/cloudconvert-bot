@@ -74,14 +74,15 @@ export default class Bot {
 
         this.bot.context.state = { bot_info: this.botInfo };
 
-        if (isDevBot) {
-            this.bot.startPolling();
-            debug('Bot started using long polling at ' + new Date());
-        } else {
-            this.bot.startWebhook('/' + this.bot.token, null, 3000);
-            await this.bot.telegram.setWebhook('https://cloud-convert-bot.now.sh/' + this.bot.token);
-            debug('Bot started using a webhook at ' + new Date());
-        }
+        // if (isDevBot) {
+        this.bot.telegram.deleteWebhook();
+        this.bot.startPolling();
+        debug('Bot started using long polling at ' + new Date());
+        // } else {
+        //     this.bot.startWebhook('/' + this.bot.token, null, 3000);
+        //     await this.bot.telegram.setWebhook('https://cloudconvert-bot.appspot.com/' + this.bot.token);
+        //     debug('Bot started using a webhook at ' + new Date());
+        // }
     }
 
     private registerListeners() {

@@ -1,6 +1,10 @@
 {
     "name": "cloudconvert-bot",
-    "version": "1.0.0",
+    "version": "2.0.0",
+    "engines": {
+        "node": ">=11.15.0",
+        "npm": ">=6.12.0"
+      },
     "dependencies": {
         "axios": "^0.19.0",
         "cloudconvert": "^1.1.2",
@@ -13,9 +17,9 @@
         "treeify": "^1.1.0"
     },
     "scripts": {
-        "start": "tsc && DEBUG=app,err node built/app.js",
+        "start": "DEBUG=app,err node built/app.js",
         "build": "tsc",
-        "debug": "tsc && DEBUG='*' node built/app.js",
+        "debug": "DEBUG='*' node built/app.js",
         "clean": "rm -r built/*"
     },
     "devDependencies": {
