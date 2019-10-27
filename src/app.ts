@@ -1,5 +1,5 @@
 // enable environment vars
-import { config } from 'dotenv';
+import { config } from 'dotenv-flow';
 config();
 
 import d from 'debug';
