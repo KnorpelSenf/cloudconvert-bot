@@ -14,7 +14,6 @@ const debug = d('bot:contr:file');
 
 export async function handleTextMessage(ctx: TaskContext, next: (() => any) | undefined): Promise<void> {
     if (ctx.message !== undefined
-        // Solely rely on command as it captures both texts and captions
         && ctx.state.command !== undefined) {
 
         const targetFormat = ctx.state.command.command.replace(/_/g, '.');
@@ -113,10 +112,23 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
                 .map(c => convertFile(ctx, fileId, c.to, fileName)));
         }
 
-        // Try to convert file to format specified in db
-        if (task.task !== undefined && task.task.target_format !== undefined) {
+        // Perform one-time conversion
+        let performedOneTimeConversion = false;
+        if (ctx.state.command !== undefined) {
+            const targetFormat = ctx.state.command.command;
+            conversions.push(
+                convertFile(ctx, fileId, targetFormat, fileName),
+            );
+            performedOneTimeConversion = true;
+        } else if (task.task !== undefined && task.task.target_format !== undefined) {
+            // Try to convert file to format specified in db
             conversions.push(
                 convertFile(ctx, fileId, task.task.target_format, fileName),
+            );
+            performedOneTimeConversion = true;
+        }
+        if (performedOneTimeConversion) {
+            conversions.push(
                 ctx.db.clearTask(ctx.message.chat),
             );
         }

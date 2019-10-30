@@ -13,12 +13,13 @@ export default function commandArgs(ctx: TaskContext, next: (() => any) | undefi
             || ctx.message.caption
             || 'this will never happen, but if it does, it will not match the regex';
         const match = text.match(/^\/([^\s]+)\s?([\s\S]+)?/);
+        debug(text);
         if (match !== null) {
             const raw: string = text;
             const command: string = match[1] ? match[1] : '';
             const args: string[] = match[2] ? match[2].split(/\s/).filter(arg => !!arg) : [];
-            debug(args);
             ctx.state.command = { raw, command, args };
+            debug(ctx.state.command);
         }
     }
     if (next !== undefined) {
