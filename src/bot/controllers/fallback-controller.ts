@@ -4,5 +4,7 @@ import TaskContext from '../models/task-context';
 const debug = d('bot:contr:cb');
 
 export async function help(ctx: TaskContext) {
-    await ctx.reply(strings.helpmsgText);
+    if (ctx.message !== undefined && ctx.message.chat.type === 'private') {
+        await ctx.reply(strings.helpmsgText);
+    }
 }
