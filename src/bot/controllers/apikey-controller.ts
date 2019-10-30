@@ -1,6 +1,7 @@
 import d from 'debug';
 import * as strings from '../../strings';
-import { validateApiKey } from '../models/cloud-convert';
+import * as htmlUtils from '../helpers/html-escaper';
+import * as cloudconvert from '../models/cloud-convert';
 import TaskContext from '../models/task-context';
 const debug = d('bot:contr:apikey');
 
@@ -37,7 +38,7 @@ export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
         });
         debug(statusMessage);
         debug('Validating');
-        const username = await validateApiKey(apiKey);
+        const username = await cloudconvert.validateApiKey(apiKey);
         debug(username);
         const valid = username !== undefined;
         if (valid) {
@@ -57,7 +58,7 @@ export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
             await ctx.telegram.editMessageText(statusMessage.chat.id,
                 statusMessage.message_id,
                 undefined,
-                strings.invalidApiKey + apiKey, {
+                strings.invalidApiKey + htmlUtils.escapeHtmlTags(apiKey), {
                 reply_to_message_id: ctx.message.message_id,
                 parse_mode: 'HTML',
             });

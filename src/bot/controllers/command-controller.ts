@@ -2,6 +2,7 @@ import { ProcessData } from 'cloudconvert';
 import d from 'debug';
 import treeify from 'treeify';
 import * as strings from '../../strings';
+import * as htmlUtils from '../helpers/html-escaper';
 import * as cloudconvert from '../models/cloud-convert';
 import TaskContext from '../models/task-context';
 import * as controllerUtils from './apikey-controller';
@@ -123,7 +124,7 @@ export async function info(ctx: TaskContext): Promise<void> {
             const tree = treeify.asTree(fileInfo.info, true, true);
             // WHY THE FUCK ARE THERE NULL CHARACTERS IN THIS STRING?!
             const clean = tree.replace(/\0/g, '');
-            const escaped = escapeHtmlTags(clean);
+            const escaped = htmlUtils.escapeHtmlTags(clean);
             msg = strings.fileInfo + '\n<pre>' + escaped + '</pre>';
         } else {
             msg = strings.noFileInfo;
@@ -141,17 +142,4 @@ export async function convert(ctx: TaskContext): Promise<void> {
     if (fileId !== undefined) {
         await files.setSourceFile(ctx, fileId);
     }
-}
-
-// functions for HTML tag escaping, based on https://stackoverflow.com/a/5499821/
-const tagsToEscape = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-};
-function escapeHtmlTags(str: string): string {
-    return str.replace(/[&<>]/g, escapeTag);
-}
-function escapeTag(tag: string): string {
-    return tagsToEscape[tag as '&' | '<' | '>'] || tag;
 }
