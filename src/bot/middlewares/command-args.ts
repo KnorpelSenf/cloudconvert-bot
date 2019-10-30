@@ -9,6 +9,7 @@ export default function commandArgs(ctx: TaskContext, next: (() => any) | undefi
         && ctx.message !== undefined
         && (ctx.message.text !== undefined && ctx.message.text.startsWith('/')
             || ctx.message.caption !== undefined && ctx.message.caption.startsWith('/'))) {
+
         const text = ctx.message.text
             || ctx.message.caption
             || 'this will never happen, but if it does, it will not match the regex';
@@ -16,11 +17,16 @@ export default function commandArgs(ctx: TaskContext, next: (() => any) | undefi
         debug(text);
         if (match !== null) {
             const raw: string = text;
-            const command: string = match[1] ? match[1] : '';
+            const command: string = match[1]
+                ? match[1].includes('@')
+                    ? match[1].split('@', 2)[0]
+                    : match[1]
+                : '';
             const args: string[] = match[2] ? match[2].split(/\s/).filter(arg => !!arg) : [];
             ctx.state.command = { raw, command, args };
             debug(ctx.state.command);
         }
+
     }
     if (next !== undefined) {
         return next();
