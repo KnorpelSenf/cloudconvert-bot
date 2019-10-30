@@ -2,6 +2,7 @@ import axios from 'axios';
 import CloudConvert, { Process, ProcessData } from 'cloudconvert';
 import d from 'debug';
 import fs from 'fs';
+import path from 'path';
 import { Array, Literal, Null, Number, Record, Static, String, Union } from 'runtypes';
 import tmp from 'tmp-promise';
 import * as strings from '../../strings';
@@ -123,7 +124,8 @@ export async function convertFile(fileUrl: string, outputformat: string, key?: s
     const inputformat = util.ext(fileUrl);
     const cc = getCloudConvert(key);
 
-    const filePromise = tmp.file({ postfix: '.' + outputformat });
+    // Create temp dir (not temp file) to be able to retain original file name
+    const dirPromise = tmp.dir();
 
     let p: Process = await new Promise((resolve, reject) => {
         cc.createProcess({
@@ -146,13 +148,13 @@ export async function convertFile(fileUrl: string, outputformat: string, key?: s
         // in order to be able to use some proper async/await. Thanks.
         p.wait(promiseResolver(resolve, reject), REFRESH_INTERVAL);
     });
-    const file = await filePromise;
+    const dir = await dirPromise;
+    const file = path.join(dir.path, path.basename(fileUrl) + '.' + outputformat);
     p = await new Promise(async (resolve, reject) => {
-        p.download(fs.createWriteStream(file.path), undefined, promiseResolver(resolve, reject));
+        p.download(fs.createWriteStream(file), undefined, promiseResolver(resolve, reject));
     });
-    file.cleanup(); // don't wait for this to happen
-    p.delete(); // ditto
-    return file.path;
+    p.delete(); // don't await this
+    return file;
 }
 
 function getCloudConvert(key?: string): CloudConvert {

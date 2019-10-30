@@ -1,4 +1,6 @@
 import d from 'debug';
+import filesystem from 'fs';
+import path from 'path';
 import * as strings from '../../strings';
 import * as util from '../helpers/get-file-extension';
 import { autoConversionReplyMarkup, cancelOperationReplyMarkup } from '../helpers/reply-markup-builder';
@@ -7,6 +9,7 @@ import Task from '../models/task';
 import TaskContext from '../models/task-context';
 import * as cloudconvert from './../models/cloud-convert';
 import * as controllerUtils from './controller-utils';
+const fs = filesystem.promises;
 const debug = d('bot:contr:file');
 
 export async function handleTextMessage(ctx: TaskContext, next: (() => any) | undefined): Promise<void> {
@@ -197,6 +200,8 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
                 reply_to_message_id: ctx.message.message_id,
                 reply_markup: autoConversionReplyMarkup(conversion),
             });
+            const dir = path.dirname(file); // temporary directory of file created for download
+            fs.unlink(file).then(() => fs.rmdir(dir));
         } catch (e) {
             if (e.error_code === 400) {
                 await ctx.reply(strings.fileTooBig);
