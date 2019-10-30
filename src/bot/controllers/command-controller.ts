@@ -92,12 +92,12 @@ export async function apiKey(ctx: TaskContext): Promise<void> {
 
 export async function info(ctx: TaskContext): Promise<void> {
     debug('/info');
-    const fileId = await utils.getFileIdFromReply(ctx, strings.helpmsgInfo);
-    if (ctx.message !== undefined && fileId !== undefined) {
+    const file = await utils.getFileIdFromReply(ctx, strings.helpmsgInfo);
+    if (ctx.message !== undefined && file !== undefined) {
         let fileInfo: ProcessData | undefined;
         let url: string;
         try {
-            url = await ctx.telegram.getFileLink(fileId);
+            url = await ctx.telegram.getFileLink(file.file_id);
         } catch (e) {
             if (e.code === 400) {
                 await ctx.reply(strings.fileTooBig);
@@ -138,8 +138,8 @@ export async function info(ctx: TaskContext): Promise<void> {
 
 export async function convert(ctx: TaskContext): Promise<void> {
     debug('/convert');
-    const fileId = await utils.getFileIdFromReply(ctx, strings.helpmsgConvert);
-    if (fileId !== undefined) {
-        await files.setSourceFile(ctx, fileId);
+    const file = await utils.getFileIdFromReply(ctx, strings.helpmsgConvert);
+    if (file !== undefined) {
+        await files.setSourceFile(ctx, file.file_id);
     }
 }

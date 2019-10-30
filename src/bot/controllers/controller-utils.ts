@@ -5,6 +5,7 @@ import * as util from '../helpers/get-file-extension';
 import { cancelOperationReplyMarkup } from '../helpers/reply-markup-builder';
 import TaskContext from '../models/task-context';
 import * as cloudconvert from './../models/cloud-convert';
+const debug = d('bot:contr:util');
 
 export async function printPossibleConversions(ctx: TaskContext, fileId: string): Promise<void> {
     let fileUrl: string;
@@ -42,7 +43,8 @@ export async function printPossibleConversions(ctx: TaskContext, fileId: string)
     await ctx.replyWithHTML(msg, extra);
 }
 
-export async function getFileIdFromReply(ctx: TaskContext, usageHelp?: string): Promise<string | undefined> {
+export async function getFileIdFromReply(ctx: TaskContext, usageHelp?: string)
+    : Promise<{ file_id: string, file_name?: string } | undefined> {
     if (ctx.message !== undefined) {
         if (ctx.message.reply_to_message === undefined) {
             if (usageHelp) {
@@ -50,7 +52,7 @@ export async function getFileIdFromReply(ctx: TaskContext, usageHelp?: string): 
             }
         } else {
             const reply = ctx.message.reply_to_message;
-            let file: { file_id: string } | undefined
+            let file: { file_id: string, file_name?: string } | undefined
                 = reply.audio || reply.document || reply.sticker || reply.video || reply.voice || reply.video_note;
             if (file === undefined && reply.photo !== undefined) {
                 file = reply.photo[reply.photo.length - 1];
@@ -60,7 +62,13 @@ export async function getFileIdFromReply(ctx: TaskContext, usageHelp?: string): 
                     await ctx.reply(usageHelp, { reply_to_message_id: ctx.message.message_id });
                 }
             } else {
-                return file.file_id;
+                file.file_name = ctx.message.animation !== undefined
+                    ? ctx.message.animation.file_name
+                    : ctx.message.document !== undefined
+                        ? ctx.message.document.file_name
+                        : undefined;
+                debug(file);
+                return file;
             }
         }
     }

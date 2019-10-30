@@ -120,7 +120,8 @@ export async function listPossibleConversions(ext: string): Promise<Format[]> {
     return Array(FormatType).check(response.data);
 }
 
-export async function convertFile(fileUrl: string, outputformat: string, key?: string): Promise<string> {
+export async function convertFile(fileUrl: string, outputformat: string, fileName?: string, key?: string)
+    : Promise<string> {
     const inputformat = util.ext(fileUrl);
     const cc = getCloudConvert(key);
 
@@ -149,7 +150,7 @@ export async function convertFile(fileUrl: string, outputformat: string, key?: s
         p.wait(promiseResolver(resolve, reject), REFRESH_INTERVAL);
     });
     const dir = await dirPromise;
-    const file = path.join(dir.path, path.basename(fileUrl) + '.' + outputformat);
+    const file = path.join(dir.path, (fileName || path.basename(fileUrl)) + '.' + outputformat);
     p = await new Promise(async (resolve, reject) => {
         p.download(fs.createWriteStream(file), undefined, promiseResolver(resolve, reject));
     });
