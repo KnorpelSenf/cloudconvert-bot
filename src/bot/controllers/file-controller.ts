@@ -14,6 +14,11 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
         && ctx.message.text !== undefined
         && ctx.state.command !== undefined) {
 
+        if (ctx.message.chat.type !== 'private') {
+            // Do not spam groups, supergroups or channels
+            return;
+        }
+
         const targetFormat = ctx.state.command.command.replace(/_/g, '.');
 
         // Try to convert file in reply
@@ -80,7 +85,7 @@ async function handleFile(ctx: TaskContext, fileId: string): Promise<void> {
         const task = await ctx.db.getTaskInformation(ctx.message.chat);
 
         // Do not try to convert file to format specified in reply
-        // as this would be confusing.
+        // as this would be counter-intuitive.
 
         const conversions: Array<Promise<void>> = [];
         // Perform all auto-conversions
@@ -113,7 +118,7 @@ async function handleFile(ctx: TaskContext, fileId: string): Promise<void> {
 
         if (conversions.length > 0) {
             await Promise.all(conversions);
-        } else {
+        } else if (ctx.message.chat.type === 'private') {
             // No target format yet, list conversion options
             await setSourceFile(ctx, fileId);
         }
