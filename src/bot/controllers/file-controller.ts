@@ -115,6 +115,7 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
         // Perform one-time conversion
         let performedOneTimeConversion = false;
         if (ctx.state.command !== undefined) {
+            // Try to convert file to format specified in caption
             const targetFormat = ctx.state.command.command;
             conversions.push(
                 convertFile(ctx, fileId, targetFormat, fileName),
@@ -128,6 +129,7 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
             performedOneTimeConversion = true;
         }
         if (performedOneTimeConversion) {
+            // Clear the task if any of the two above were performed
             conversions.push(
                 ctx.db.clearTask(ctx.message.chat),
             );
