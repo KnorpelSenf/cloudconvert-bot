@@ -7,9 +7,11 @@ import TaskContext from '../models/task-context';
 export default function commandArgs(ctx: TaskContext, next: (() => any) | undefined): any {
     if (ctx.updateType === 'message'
         && ctx.message !== undefined
-        && ctx.message.text !== undefined
-        && ctx.message.text.startsWith('/')) {
-        const text = ctx.message.text;
+        && (ctx.message.text !== undefined && ctx.message.text.startsWith('/')
+            || ctx.message.caption !== undefined && ctx.message.caption.startsWith('/'))) {
+        const text = ctx.message.text
+            || ctx.message.caption
+            || 'this will never happen, but if it does, it will not match the regex';
         const match = text.match(/^\/([^\s]+)\s?([\s\S]+)?/);
         if (match !== null) {
             const raw: string = text;

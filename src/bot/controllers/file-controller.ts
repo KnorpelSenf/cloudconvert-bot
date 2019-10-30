@@ -14,7 +14,7 @@ const debug = d('bot:contr:file');
 
 export async function handleTextMessage(ctx: TaskContext, next: (() => any) | undefined): Promise<void> {
     if (ctx.message !== undefined
-        && ctx.message.text !== undefined
+        // Solely rely on command as it captures both texts and captions
         && ctx.state.command !== undefined) {
 
         const targetFormat = ctx.state.command.command.replace(/_/g, '.');

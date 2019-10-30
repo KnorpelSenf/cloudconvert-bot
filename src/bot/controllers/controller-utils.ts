@@ -67,6 +67,7 @@ export async function getFileIdFromReply(ctx: TaskContext, usageHelp?: string)
                     : ctx.message.document !== undefined
                         ? ctx.message.document.file_name
                         : undefined;
+                debug('File in reply is:');
                 debug(file);
                 return file;
             }
