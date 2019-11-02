@@ -9,7 +9,7 @@ The bot runs with webhooks but it will automatically switch to long polling mode
 (E. g. the primary test bot is [@cloud_convert_dev_bot](https://t.me/cloud_convert_dev_bot).)
 This way, you can host the bot efficiently (webhooks) and still use it locally (long polling).
 
-However, it will always rely on `.env`. The file `.env.environment` will be ignored.
+However, it will always rely on `.env`. The file `.env.production` will be ignored.
 You need to exchange them to switch between the bots.
 
 ## Install
