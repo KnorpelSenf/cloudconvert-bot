@@ -1,10 +1,9 @@
 import axios from 'axios';
 import CloudConvert, { Process, ProcessData } from 'cloudconvert';
 import d from 'debug';
-import fs from 'fs';
 import path from 'path';
 import { Array, Literal, Null, Number, Record, Static, String, Union } from 'runtypes';
-import tmp from 'tmp-promise';
+import { Transform, TransformCallback } from 'stream';
 import * as strings from '../../strings';
 import * as util from '../helpers/get-file-extension';
 const debug = d('bot:converter');
@@ -120,13 +119,10 @@ export async function listPossibleConversions(ext: string): Promise<Format[]> {
     return Array(FormatType).check(response.data);
 }
 
-export async function convertFile(fileUrl: string, outputformat: string, fileName?: string, key?: string)
-    : Promise<string> {
+export async function convertFile(fileUrl: string, outputformat: string, fileName: string, key?: string)
+    : Promise<NodeJS.ReadableStream> {
     const inputformat = util.ext(fileUrl);
     const cc = getCloudConvert(key);
-
-    // Create temp dir (not temp file) to be able to retain original file name
-    const dirPromise = tmp.dir();
 
     let p: Process = await new Promise((resolve, reject) => {
         cc.createProcess({
@@ -149,13 +145,13 @@ export async function convertFile(fileUrl: string, outputformat: string, fileNam
         // in order to be able to use some proper async/await. Thanks.
         p.wait(promiseResolver(resolve, reject), REFRESH_INTERVAL);
     });
-    const dir = await dirPromise;
-    const file = path.join(dir.path, (fileName || path.basename(fileUrl)) + '.' + outputformat);
-    p = await new Promise(async (resolve, reject) => {
-        p.download(fs.createWriteStream(file), undefined, promiseResolver(resolve, reject));
+
+    const stream = new PassThroughStream(fileName);
+    p.download(stream);
+    stream.on('finish', () => {
+        p.delete();
     });
-    p.delete(); // don't await this
-    return file;
+    return stream;
 }
 
 function getCloudConvert(key?: string): CloudConvert {
@@ -163,7 +159,7 @@ function getCloudConvert(key?: string): CloudConvert {
 }
 
 // We cannot use `util.promisify` due to the missing context.
-// Use this helper function instead of adding bluebird as a dependency.
+// Use this helper function (instead of adding bluebird as a dependency).
 function promiseResolver<T>(resolve: (value?: T | PromiseLike<T> | undefined) => void,
                         /**/reject: (reason?: any) => void):
                         /**/(err: Error, t: T) => void {
@@ -185,4 +181,31 @@ export function describeErrorCode(err: Error & { code: number }): string {
                 return strings.unknownError;
             }
     }
+}
+
+// Stream implementation that conforms to both WriteStream and ReadStream
+// and simply forwards all data
+class PassThroughStream extends Transform {
+
+    public bytesWritten = 0;
+
+    // Hold dummy file path
+    public readonly path: string = '/tmp/' + this.fileName;
+
+    // Alias close method
+    public close = this.end;
+
+    public constructor(public fileName: string) {
+        super();
+    }
+
+    // Simply pass through all data chunks
+    public _transform(chunk: any, _: string, cb: TransformCallback) {
+        this.push(chunk);
+        if (typeof chunk.length === 'number') {
+            this.bytesWritten += chunk.length;
+        }
+        cb();
+    }
+
 }

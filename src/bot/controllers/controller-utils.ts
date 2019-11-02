@@ -62,13 +62,6 @@ export async function getFileIdFromReply(ctx: TaskContext, usageHelp?: string)
                     await ctx.reply(usageHelp, { reply_to_message_id: ctx.message.message_id });
                 }
             } else {
-                file.file_name = ctx.message.animation !== undefined
-                    ? ctx.message.animation.file_name
-                    : ctx.message.document !== undefined
-                        ? ctx.message.document.file_name
-                        : undefined;
-                debug('File in reply is:');
-                debug(file);
                 return file;
             }
         }

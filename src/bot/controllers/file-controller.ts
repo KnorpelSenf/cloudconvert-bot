@@ -175,7 +175,7 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
         }
 
         let task: Partial<Task>;
-        let file: string;
+        let stream: NodeJS.ReadableStream;
 
         // Get info and convert file, show :thinking_face: in the meantime
         let thinkingMessage;
@@ -185,8 +185,15 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
             }),
             ctx.db.getTaskInformation(ctx.message.chat.id),
         ]);
+
+        fileName = fileName || path.basename(fileUrl);
+        const extension = '.' + targetFormat;
+        if (!fileName.endsWith(extension)) {
+            fileName += extension;
+        }
+
         try {
-            file = await cloudconvert.convertFile(fileUrl, targetFormat, fileName, task.api_key);
+            stream = await cloudconvert.convertFile(fileUrl, targetFormat, fileName, task.api_key);
         } catch (e) {
             if (e.code === undefined || typeof e.code !== 'number') {
                 d('err')(e);
@@ -214,14 +221,12 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
                 && task.auto.some(c => c.from === sourceFormat && c.to === targetFormat),
         };
         try {
-            await ctx.replyWithDocument({ source: file }, {
+            await ctx.replyWithDocument({ source: stream, filename: fileName }, {
                 reply_to_message_id: ctx.message.message_id,
                 reply_markup: autoConversionReplyMarkup(conversion),
             });
-            const dir = path.dirname(file); // temporary directory of file created for download
-            fs.unlink(file).then(() => fs.rmdir(dir));
         } catch (e) {
-            if (e.error_code === 400) {
+            if (e.code === 400) {
                 await ctx.reply(strings.fileTooBig);
             } else {
                 d('err')(e);

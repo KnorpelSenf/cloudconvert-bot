@@ -28,7 +28,6 @@
         "pretty-bytes": "^5.3.0",
         "runtypes": "^4.0.3",
         "telegraf": "^3.33.3",
-        "tmp-promise": "^2.0.2",
         "treeify": "^1.1.0"
     },
     "devDependencies": {
