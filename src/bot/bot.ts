@@ -81,7 +81,7 @@ export default class Bot {
             debug('Bot @' + botName + ' started using long polling at ' + new Date());
         } else {
             const port = process.env.PORT || 8080;
-            const url = 'https://cloudconvert-bot.appspot.com:443/' + this.bot.token;
+            const url = 'https://cloudconvert-bot-257814.appspot.com:443/' + this.bot.token;
             const app = express();
             app.use(this.bot.webhookCallback('/' + this.bot.token));
             await this.bot.telegram.setWebhook(url);
