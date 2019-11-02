@@ -116,10 +116,10 @@ your CloudConvert account in this chat! Yay! (If you do not want this, you can r
 export const unsupportedConversion = 'This conversion is not supported!';
 export const conversionError = 'The conversion could not be performed. See the details below.';
 export const fileTooBig = 'The file is too big! See /limitations';
-export const unknownError = 'Something went wrong. Sorry for that. You may contact \
-@KnorpelSenf because of this.';
+export const unknownError = 'Something went wrong. Sorry for that. You may write me in \
+@cloud_convert_bot_lounge because of this.';
 export const unknownErrorPerhaps = 'Internal error. Did your conversion go well? If not, do not \
-hesitate to contact @KnorpelSenf or to try again.';
+hesitate to contact me in @cloud_convert_bot_lounge or to try again.';
 
 export const invalidApiKey = 'Your API key is invalid! Did you follow the steps under /contribute?\n\
 Once you provided a valid key, you can always opt out again and return to using the account shared among \
