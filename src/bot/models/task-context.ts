@@ -2,6 +2,7 @@ import { UpdateWriteOpResult } from 'mongodb';
 import { ContextMessageUpdate } from 'telegraf';
 import { Chat } from 'telegram-typings';
 import { BotInfo } from '../bot';
+import { AutoFileConversion } from './file-conversion';
 import Task from './task';
 
 export default interface TaskContext extends ContextMessageUpdate {
@@ -33,6 +34,8 @@ export interface TaskManager {
     updateTaskInformation: (chat: ChatKey, update: any) => Promise<UpdateWriteOpResult>;
 
     clearTask: (chat: ChatKey) => Promise<void>;
+
+    logConversionPerformed: (chat: ChatKey, conversion: AutoFileConversion) => Promise<void>;
 }
 
 export interface ApiKeyManager {

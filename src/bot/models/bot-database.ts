@@ -1,5 +1,6 @@
 import d from 'debug';
 import { Collection, Db, MongoClient, UpdateWriteOpResult } from 'mongodb';
+import { AutoFileConversion } from './file-conversion';
 import Task from './task';
 import { ApiKeyManager, ChatKey, ChatManager, TaskManager } from './task-context';
 const debug = d('bot:database');
@@ -70,9 +71,17 @@ export default class BotDatabase implements TaskManager, ChatManager, ApiKeyMana
 
     public async clearTask(chat: ChatKey): Promise<void> {
         const key = this.toDatabaseKey(chat);
-        const task = await this.getTaskInformation(chat);
         const update = { $unset: { task: '' } };
         await this.getCollection('tasks').updateOne(key, update);
+    }
+
+    public async logConversionPerformed(chat: ChatKey, conversion: AutoFileConversion): Promise<void> {
+        const collection = this.getCollection('stats');
+        await collection.insertOne({
+            chat_id: this.toDatabaseKey(chat),
+            conversion,
+            completed: new Date(),
+        });
     }
 
     private toDatabaseKey(chat: ChatKey): ChatFilter {

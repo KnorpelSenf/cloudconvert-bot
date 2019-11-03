@@ -236,5 +236,6 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
         } finally {
             clearInterval(handle);
         }
+        await ctx.db.logConversionPerformed(ctx.message.chat, conversion);
     }
 }
