@@ -2,8 +2,7 @@ import * as strings from '../../strings';
 import TaskContext from '../models/task-context';
 
 export async function addedToGroup(ctx: TaskContext): Promise<void> {
-    if (ctx.message !== undefined
-        && ctx.message.new_chat_members !== undefined
+    if (ctx.message?.new_chat_members !== undefined
         && ctx.message.new_chat_members.some(user => user.id === ctx.state.bot_info.bot_id)) {
         let apiKey: string | undefined;
         let message = strings.helpmsgStartGroups;
@@ -22,9 +21,7 @@ export async function addedToGroup(ctx: TaskContext): Promise<void> {
 }
 
 export async function removedFromGroup(ctx: TaskContext): Promise<void> {
-    if (ctx.message !== undefined
-        && ctx.message.left_chat_member !== undefined
-        && ctx.message.left_chat_member.id === ctx.state.bot_info.bot_id) {
+    if (ctx.message?.left_chat_member?.id === ctx.state.bot_info.bot_id) {
         await ctx.db.unregisterChat(ctx.message.chat);
     }
 }

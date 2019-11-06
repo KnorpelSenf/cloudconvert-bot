@@ -30,7 +30,7 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
 
         // Try to convert file stored by id in db
         const task = (await ctx.db.getTaskInformation(ctx.message.chat)).task;
-        if (task !== undefined && task.file_id !== undefined) {
+        if (task?.file_id !== undefined) {
             await Promise.all([
                 convertFile(ctx, task.file_id, targetFormat, task.file_name),
                 ctx.db.clearTask(ctx.message.chat),
@@ -55,7 +55,7 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
 
 export async function handleDocument(ctx: TaskContext): Promise<void> {
     if (ctx.message !== undefined) {
-        const file: { file_id: string } | undefined
+        const file: { file_id: string, file_name?: string } | undefined
             = ctx.message.audio
             || ctx.message.animation
             || ctx.message.document
@@ -63,21 +63,14 @@ export async function handleDocument(ctx: TaskContext): Promise<void> {
             || ctx.message.video
             || ctx.message.voice
             || ctx.message.video_note;
-        const fileName: string | undefined
-            = ctx.message.animation !== undefined
-                ? ctx.message.animation.file_name
-                : ctx.message.document !== undefined
-                    ? ctx.message.document.file_name
-                    : undefined;
         if (file !== undefined) {
-            await handleFile(ctx, file.file_id, fileName);
+            await handleFile(ctx, file.file_id, file.file_name);
         }
     }
 }
 
 export async function handlePhoto(ctx: TaskContext): Promise<void> {
-    if (ctx.message !== undefined
-        && ctx.message.photo !== undefined
+    if (ctx.message?.photo !== undefined
         && ctx.message.photo.length > 0) {
         const file = ctx.message.photo[ctx.message.photo.length - 1];
         await handleFile(ctx, file.file_id);
@@ -121,7 +114,7 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
                 convertFile(ctx, fileId, targetFormat, fileName),
             );
             performedOneTimeConversion = true;
-        } else if (task.task !== undefined && task.task.target_format !== undefined) {
+        } else if (task.task?.target_format !== undefined) {
             // Try to convert file to format specified in db
             conversions.push(
                 convertFile(ctx, fileId, task.task.target_format, fileName),

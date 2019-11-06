@@ -76,9 +76,7 @@ export async function limitations(ctx: TaskContext): Promise<void> {
 export async function apiKey(ctx: TaskContext): Promise<void> {
     debug('/apikey');
     if (ctx.message !== undefined) {
-        if (ctx.state.command !== undefined
-            && ctx.state.command.args.length > 0
-            && ctx.state.command.args[0] !== undefined) {
+        if (ctx.state.command?.args?.[0] !== undefined) {
             const key = ctx.state.command.args[0];
             await controllerUtils.receivedApiKey(ctx, key);
         } else {
@@ -120,7 +118,7 @@ export async function info(ctx: TaskContext): Promise<void> {
         }
 
         let msg: string;
-        if (fileInfo !== undefined && fileInfo.info !== undefined) {
+        if (fileInfo?.info !== undefined) {
             const tree = treeify.asTree(fileInfo.info, true, true);
             // WHY THE FUCK ARE THERE NULL CHARACTERS IN THIS STRING?!
             const clean = tree.replace(/\0/g, '');

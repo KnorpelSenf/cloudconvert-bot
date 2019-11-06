@@ -37,6 +37,6 @@
         "@types/request": "^2.48.3",
         "@types/tmp": "^0.1.0",
         "@types/treeify": "^1.0.0",
-        "typescript": "^3.6.4"
+        "typescript": "^3.7.2"
     }
 }

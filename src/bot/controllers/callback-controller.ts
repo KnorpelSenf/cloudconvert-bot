@@ -14,7 +14,7 @@ type CallbackQueryData = Static<typeof CallbackQueryDataType>;
 
 export async function handleCallbackQuery(ctx: TaskContext) {
     const query = ctx.callbackQuery;
-    if (query !== undefined && query.data !== undefined && query.message !== undefined) {
+    if (query?.data !== undefined && query.message !== undefined) {
         const data: CallbackQueryData = CallbackQueryDataType.check(JSON.parse(query.data));
         const chat = query.message.chat;
         if ('cancel' in data) {
