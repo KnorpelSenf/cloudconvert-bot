@@ -78,7 +78,7 @@ export default class BotDatabase implements TaskManager, ChatManager, ApiKeyMana
     public async logConversionPerformed(chat: ChatKey, conversion: AutoFileConversion): Promise<void> {
         const collection = this.getCollection('stats');
         await collection.insertOne({
-            chat_id: this.toDatabaseKey(chat),
+            chat_id: typeof chat === 'number' ? chat : chat.id,
             conversion,
             completed: new Date(),
         });
