@@ -84,7 +84,7 @@ export const helpmsgFeedback = 'Like this bot? Tell the dev @KnorpelSenf or shar
 discussion group at @cloud_convert_bot_lounge!\n\nThe best way to say thank you is by providing an \
 API key. /contribute';
 
-export const sendApiKey = 'Perfect! Now send me the API key!';
+export const sendApiKey = 'Perfect! Now send me the API key in reply to this message!';
 
 export const helpmsgInfo = 'Use this command in reply to a file! \
 I will then tell you all file information (meta data) I know.';
@@ -121,7 +121,11 @@ export const unknownError = 'Something went wrong. Sorry for that. You may write
 export const unknownErrorPerhaps = 'Internal error. Did your conversion go well? If not, do not \
 hesitate to contact me in @cloud_convert_bot_lounge or to try again.';
 
-export const invalidApiKey = 'Your API key is invalid! Did you follow the steps under /contribute?\n\
+export const invalidApiKey = 'Your API key is invalid! Did you follow the steps under /contribute?\n\n\
+1) Do not type the API key yourself as there could be a typo. Instead, copy and paste the API key from the \
+website directly.\n\
+2) Do not use Facebook login on www.cloudconvert.com. Use an email instead. Google login should work, too.\n\
+3) If nothing works, you can regenerate the API on the dashboard and try /contribute again.\n\n\
 Once you provided a valid key, you can always opt out again and return to using the account shared among \
 all bot users. To do so, simply restart the bot with /start.\n\nThis is the invalid API key you provided:\n';
 
