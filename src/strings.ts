@@ -113,13 +113,9 @@ bunch of cool facts you probably didn\'t know. How awesome is that?! Check it ou
 export const personalApiKeyInUse = 'Since you already provided your personal API key, I will also use \
 your CloudConvert account in this chat! Yay! (If you do not want this, you can reset the bot in this chat.)';
 
-export const unsupportedConversion = 'This conversion is not supported!';
-export const conversionError = 'The conversion could not be performed. See the details below.';
 export const fileTooBig = 'The file is too big! See /limitations';
 export const unknownError = 'Something went wrong. Sorry for that. You may write me in \
 @cloud_convert_bot_lounge because of this.';
-export const unknownErrorPerhaps = 'Internal error. Did your conversion go well? If not, do not \
-hesitate to contact me in @cloud_convert_bot_lounge or to try again.';
 
 export const invalidApiKey = 'Your API key is invalid! Did you follow the steps under /contribute?\n\n\
 1) Do not type the API key yourself as there could be a typo. Instead, copy and paste the API key from the \
@@ -128,10 +124,6 @@ website directly.\n\
 3) If nothing works, you can regenerate the API on the dashboard and try /contribute again.\n\n\
 Once you provided a valid key, you can always opt out again and return to using the account shared among \
 all bot users. To do so, simply restart the bot with /start.\n\nThis is the invalid API key you provided:\n';
-
-export const invalidApiKeyType = 'Please send your API key as a text message!';
-
-export const invalidApiKeyCommand = 'You cannot use the command syntax when you try to set your API key!';
 
 export const noMoreConversionMinutes = 'It looks like there is no free conversions remaining! \
 Check /balance!\n\nYou will automatically be provided with 25 more free conversions \
