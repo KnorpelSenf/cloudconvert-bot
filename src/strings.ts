@@ -101,7 +101,7 @@ export const cancelOperation = 'Cancel operation';
 
 export const operationCancelled = 'Operation cancelled.';
 
-export const helpmsgText = 'Send me a file to convert it!';
+export const helpmsgText = 'I cannot convert text messages. Instead, send me a file to convert it!';
 
 export const apiKeyProvided = 'Thank you for providing the API key! Your own account is now ready \
 and set up. By no longer relying on the default account, you help making the bot more useful \
