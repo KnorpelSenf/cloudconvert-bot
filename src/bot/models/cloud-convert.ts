@@ -71,6 +71,7 @@ async function getNonDefaultUser(key: string): Promise<User | undefined> {
         debug(response.data);
         return UserType.check(response.data);
     } catch (e) {
+        d('err')(e);
         return undefined;
     }
 }
