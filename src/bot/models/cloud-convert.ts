@@ -1,8 +1,7 @@
 import axios from 'axios';
 import CloudConvert, { Process, ProcessData } from 'cloudconvert';
 import d from 'debug';
-import path from 'path';
-import { Array, Literal, Null, Number, Record, Static, String, Union } from 'runtypes';
+import { Array, Literal, Null, Number, Record, Static, String, Undefined, Union } from 'runtypes';
 import { Transform, TransformCallback } from 'stream';
 import * as strings from '../../strings';
 import * as util from '../helpers/get-file-extension';
@@ -18,7 +17,7 @@ const UserType = Record({
             Literal('box'),
             Literal('onedrive'),
         ),
-    ),
+    ).Or(Undefined),
 });
 type User = Static<typeof UserType>;
 
@@ -60,7 +59,7 @@ export async function getBalance(key?: string): Promise<number> {
 async function getUser(key?: string): Promise<User> {
     return key === undefined
         ? await getDefaultUser()
-        : await getNonDefaultUser(key) || getDefaultUser();
+        : (await getNonDefaultUser(key)) || (await getDefaultUser());
 }
 
 async function getNonDefaultUser(key: string): Promise<User | undefined> {
@@ -178,6 +177,8 @@ export function describeErrorCode(err: Error & { code: number }): string {
             if (err.message) {
                 return err.message;
             } else {
+                d('err')('ERROR\'S STACK AND CURRENT STACK:');
+                d('err')(err.stack);
                 d('err')(new Error().stack);
                 return strings.unknownError;
             }
