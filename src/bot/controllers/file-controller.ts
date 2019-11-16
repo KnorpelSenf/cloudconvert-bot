@@ -30,7 +30,7 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
 
         // Try to convert file stored by id in db
         const task = (await ctx.db.getTaskInformation(ctx.message.chat)).task;
-        if (task?.file_id !== undefined) {
+        if (task ?.file_id !== undefined) {
             await Promise.all([
                 convertFile(ctx, task.file_id, targetFormat, task.file_name),
                 ctx.db.clearTask(ctx.message.chat),
@@ -70,7 +70,7 @@ export async function handleDocument(ctx: TaskContext): Promise<void> {
 }
 
 export async function handlePhoto(ctx: TaskContext): Promise<void> {
-    if (ctx.message?.photo !== undefined
+    if (ctx.message ?.photo !== undefined
         && ctx.message.photo.length > 0) {
         const file = ctx.message.photo[ctx.message.photo.length - 1];
         await handleFile(ctx, file.file_id);
@@ -100,9 +100,11 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
                 return;
             }
             const ext = util.ext(fileUrl);
-            conversions.push(...task.auto
-                .filter(c => c.from === ext)
-                .map(c => convertFile(ctx, fileId, c.to, fileName)));
+            conversions.push(
+                ...task.auto
+                    .filter(c => c.from === ext)
+                    .map(c => convertFile(ctx, fileId, c.to, fileName))
+            );
         }
 
         // Perform one-time conversion
@@ -114,7 +116,7 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
                 convertFile(ctx, fileId, targetFormat, fileName),
             );
             performedOneTimeConversion = true;
-        } else if (task.task?.target_format !== undefined) {
+        } else if (task.task ?.target_format !== undefined) {
             // Try to convert file to format specified in db
             conversions.push(
                 convertFile(ctx, fileId, task.task.target_format, fileName),

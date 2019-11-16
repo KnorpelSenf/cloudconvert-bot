@@ -5,6 +5,7 @@ import * as util from '../helpers/get-file-extension';
 import { cancelOperationReplyMarkup } from '../helpers/reply-markup-builder';
 import TaskContext from '../models/task-context';
 import * as cloudconvert from './../models/cloud-convert';
+import { format } from 'path';
 const debug = d('bot:contr:util');
 
 export async function printPossibleConversions(ctx: TaskContext, fileId: string): Promise<void> {
@@ -23,16 +24,21 @@ export async function printPossibleConversions(ctx: TaskContext, fileId: string)
     const ext = util.ext(fileUrl);
     const formats = await cloudconvert.listPossibleConversions(ext);
 
-    // group formats by category
-    const categories = formats.map(f => f.group).filter(uniques);
-    const msg = 'Awesome! I can convert this ' + ext + ' to:\n'
-        + categories.map(cat =>
-            '<b>' + cat + '</b>\n'
-            + formats.filter(f => f.group === cat)
-                .map(f => '/' + f.outputformat.replace(/[\s\.]/g, '_')
-                    + ' (<i>' + f.outputformat + '</i>)')
-                .join('\n'),
-        ).join('\n\n');
+    let msg;
+    if (formats.length > 0) {
+        // group formats by category
+        const categories = formats.map(f => f.group).filter(uniques);
+        msg = 'Awesome! I can convert this ' + ext + ' to:\n'
+            + categories.map(cat =>
+                '<b>' + cat + '</b>\n'
+                + formats.filter(f => f.group === cat)
+                    .map(f => '/' + f.outputformat.replace(/[\s\.]/g, '_')
+                        + ' (<i>' + f.outputformat + '</i>)')
+                    .join('\n'),
+            ).join('\n\n');
+    } else {
+        msg = 'I cannot convert files of type <b>' + ext + '</b>! Sorry!';
+    }
 
     const extra: ExtraReplyMessage = {
         reply_markup: cancelOperationReplyMarkup,
