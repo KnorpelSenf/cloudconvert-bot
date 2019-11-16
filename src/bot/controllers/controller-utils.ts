@@ -5,7 +5,6 @@ import * as util from '../helpers/get-file-extension';
 import { cancelOperationReplyMarkup } from '../helpers/reply-markup-builder';
 import TaskContext from '../models/task-context';
 import * as cloudconvert from './../models/cloud-convert';
-import { format } from 'path';
 const debug = d('bot:contr:util');
 
 export async function printPossibleConversions(ctx: TaskContext, fileId: string): Promise<void> {
