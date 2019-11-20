@@ -2,8 +2,8 @@ export const helpmsgStartPrivate = '<b>Hi there!</b>\nI can help you with file c
 Please send me your file to convert. /help';
 
 export const helpmsgPrivate = 'Hi! I am a file converter bot. I support 218 different file formats \
-and I know how to handle media of any kind (<i>audio files</i>, <i>documents</i>, <i>photos</i>, \
-<i>stickers</i>, <i>videos</i>, <i>voice notes</i> and <i>video notes</i>).\n\n\
+and I know how to handle media of any kind (<i>audio files</i>, <i>documents</i>, <i>GIFs</i>, \
+<i>photos</i>, <i>stickers</i>, <i>videos</i>, <i>voice notes</i> and <i>video notes</i>).\n\n\
 <b>IMPORTANT: You can try me out for free.</b> If you need to convert only one file, just go ahead and do it. \
 However, <b>this bot is a community project</b>. If you want to use this bot more often, please contribute by \
 providing an <i>API key</i>: see /contribute. This only takes 30 seconds and it is dead \
