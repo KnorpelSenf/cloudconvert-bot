@@ -53,7 +53,7 @@ export default class Bot {
         // await ctx.db.getKey(ctx.message.chat.id)
         //
         // This might boost performance for contributors (users who provided a cc key)
-        // if some actions needs to be performed that does not rely on the API key,
+        // if some action needs to be performed that does not rely on the API key,
         // especially if said action takes longer than a few CPU cycles (networking).
 
         debug('Bot initialized.');
