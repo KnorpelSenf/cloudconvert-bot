@@ -63,6 +63,3 @@ typings/
 
 # Built .js files
 built/
-
-# Editors
-.vscode/
