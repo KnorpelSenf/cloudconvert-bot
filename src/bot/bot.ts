@@ -1,6 +1,8 @@
 import d from 'debug';
 import express from 'express';
+import path from 'path';
 import Telegraf from 'telegraf';
+import TelegrafI18n from 'telegraf-i18n';
 import * as apiKeys from './controllers/apikey-controller';
 import * as callbacks from './controllers/callback-controller';
 import * as commands from './controllers/command-controller';
@@ -43,6 +45,13 @@ export default class Bot {
         // Add database to context object
         this.bot.context.db = this.db;
 
+        // Make internationalization available
+        const i18n = new TelegrafI18n({
+            defaultLanguage: 'en',
+            directory: path.resolve(__dirname, 'locales'),
+        });
+        this.bot.use(i18n.middleware());
+
         // Make arg parsing available
         this.bot.use(commandArgs);
 
@@ -84,8 +93,8 @@ export default class Bot {
             const url = 'https://cloudconvert-bot-257814.appspot.com:443/' + this.bot.token;
             const app = express();
             app.use(this.bot.webhookCallback('/' + this.bot.token));
-            await this.bot.telegram.setWebhook(url);
             app.listen(port);
+            await this.bot.telegram.setWebhook(url);
             debug('Bot @' + botName + ' started using a webhook at ' + new Date() + ' for URL ' + url);
         }
     }

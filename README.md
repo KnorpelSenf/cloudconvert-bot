@@ -42,6 +42,12 @@ npm run-script debug
 gcloud app deploy
 ```
 
+## Translations
+
+The bot can be translated on the website [POEditor](https://poeditor.com/join/project/rBNUMw67kZ).
+All contributions are welcome.
+Feel free to add your own language if you like.
+
 ## What else is there to say
 
 There's not too much documentation, but the code is quite clean IMO.
