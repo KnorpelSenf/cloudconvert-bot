@@ -1,0 +1,32 @@
+{
+    "cSpell.language": "en,en-GB,en-US,de,de-DE",
+    "cSpell.enabledLanguageIds": [
+        "asciidoc",
+        "css",
+        "dockerfile",
+        "dotenv",
+        "html",
+        "jade",
+        "javascript",
+        "json",
+        "jsonc",
+        "markdown",
+        "pdf",
+        "plaintext",
+        "python",
+        "restructuredtext",
+        "rst",
+        "scss",
+        "sql",
+        "svg",
+        "text",
+        "typescript",
+        "vue",
+        "vue-html",
+        "vue-postcss",
+        "xml",
+        "yaml",
+        "yml"
+    ],
+    "typescript.tsdk": "node_modules/typescript/lib"
+}
