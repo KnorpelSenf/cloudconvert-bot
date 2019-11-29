@@ -25,10 +25,10 @@
         "dotenv": "^8.2.0",
         "dotenv-flow": "^3.1.0",
         "express": "^4.17.1",
-        "mongodb": "^3.3.4",
+        "mongodb": "^3.3.5",
         "pretty-bytes": "^5.3.0",
         "runtypes": "^4.0.3",
-        "telegraf": "^3.33.3",
+        "telegraf": "^3.34.1",
         "treeify": "^1.1.0"
     },
     "devDependencies": {
@@ -36,6 +36,7 @@
         "@types/express": "^4.17.2",
         "@types/mongodb": "^3.3.11",
         "@types/treeify": "^1.0.0",
+        "tslint": "^5.20.1",
         "typescript": "^3.7.2"
     }
 }
