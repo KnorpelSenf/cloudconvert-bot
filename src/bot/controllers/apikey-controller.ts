@@ -17,7 +17,7 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
         if (apiKey.startsWith('/apikey')) {
             apiKey = apiKey.substring(7).trim();
             if (apiKey.startsWith('@')) {
-                apiKey = apiKey.substring(ctx.state.bot_info.bot_name.length + 1);
+                apiKey = apiKey.substring(ctx.state.bot_info.bot_name.length + 1).trim();
             }
         }
 
@@ -26,6 +26,7 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
         return next();
     }
 }
+
 export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
     debug('New key');
     if (ctx.message !== undefined && apiKey.length > 0) {

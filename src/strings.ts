@@ -103,6 +103,13 @@ export const operationCancelled = 'Operation cancelled.';
 
 export const helpmsgText = 'I cannot convert text messages. Instead, send me a file to convert it!';
 
+export const helpmsgTextKeySuggestion = 'I cannot convert text messages. Instead, send me a file to convert it!\n\n\
+Are you trying to submit your API key? This is possible in two ways. It does not matter which one you choose. You can either:\n\
+1) Send the message in the following format: “/apikey ABC_YOUR_API_KEY_XYZ”\n\
+Or you can just as well:\n\
+2) First send just “/apikey”. I will respond to that. Second, please use the Telegram reply feature to reply to my message \
+when you in turn submit your API key.';
+
 export const apiKeyProvided = 'Thank you for providing the API key! Your own account is now ready \
 and set up. By no longer relying on the default account, you help making the bot more useful \
 for everyone out there!\n\nI promised to unveil a hidden bot command, and I like to keep \

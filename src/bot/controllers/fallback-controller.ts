@@ -5,6 +5,9 @@ const debug = d('bot:contr:cb');
 
 export async function help(ctx: TaskContext) {
     if (ctx.message?.chat.type === 'private') {
-        await ctx.reply(strings.helpmsgText);
+        const message = (await ctx.db.getTaskInformation(ctx.message.chat)) === undefined
+            ? strings.helpmsgTextKeySuggestion
+            : strings.helpmsgText;
+        await ctx.reply(message);
     }
 }
