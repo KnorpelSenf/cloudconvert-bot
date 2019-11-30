@@ -207,7 +207,7 @@ class PassThroughStream extends Transform {
         if (typeof chunk.length === 'number') {
             this.bytesWritten += chunk.length;
         }
-        cb();
+        setImmediate(cb);
     }
 
 }
