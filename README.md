@@ -24,6 +24,12 @@ npm up && npm i
 tsc
 ```
 
+## Lint
+
+```bash
+tslint -p .
+```
+
 ## Run in prod
 
 ```bash

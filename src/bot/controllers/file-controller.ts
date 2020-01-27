@@ -103,7 +103,7 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
             conversions.push(
                 ...task.auto
                     .filter(c => c.from === ext)
-                    .map(c => convertFile(ctx, fileId, c.to, fileName))
+                    .map(c => convertFile(ctx, fileId, c.to, fileName)),
             );
         }
 
