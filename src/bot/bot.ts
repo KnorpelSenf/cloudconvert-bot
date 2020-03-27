@@ -110,6 +110,7 @@ export default class Bot {
         this.bot.command('start', commands.start);
         this.bot.command('help', commands.help);
         this.bot.command('cancel', commands.cancel);
+        this.bot.command('reset', commands.reset);
         this.bot.command('balance', commands.balance);
         this.bot.command(['contribute', 'the_more_the_merrier'], commands.contribute);
         this.bot.command('feedback', commands.feedback);

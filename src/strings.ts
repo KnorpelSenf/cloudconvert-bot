@@ -50,7 +50,7 @@ and it works entirely without witchcraft. All you need to do is to follow these 
 <b>2)</b> Visit the <a href="https://cloudconvert.com/dashboard/api/v1/keys">dashboard</a> and copy the API key.\n\
 <b>3)</b> Get back to this chat and send /apikey. Paste the API key into this chat.\n\
 Good job! Now every single operation of this bot will work based on your new Cloud Convert account! \
-Resetting the bot with /start clears the API key from our database. Once you sent me your API key, I \
+Resetting the bot with /reset clears the API key from our database. Once you sent me your API key, I \
 will tell you a secret bot command as a thank-you gift!\n\n\
 Please note that neither this bot nor its dev are in any way associated with cloudconvert.com. \
 The people behind that site just offer free file conversions and they have a neat way to connect \
@@ -101,6 +101,9 @@ export const cancelOperation = 'Cancel operation';
 
 export const operationCancelled = 'Operation cancelled.';
 
+export const reset = 'We cleared your API key from the database. Sorry to see you go! :(\n\
+You can always get your free conversion minutes back by sending /contribute!';
+
 export const helpmsgText = 'I cannot convert text messages. Instead, send me a file to convert it!';
 
 export const helpmsgTextKeySuggestion = 'I cannot convert text messages. Instead, send me a file to convert it!\n\n\
@@ -130,7 +133,7 @@ website directly.\n\
 2) Do not use Facebook login on www.cloudconvert.com. Use an email instead. Google login should work, too.\n\
 3) If nothing works, you can regenerate the API on the dashboard and try /contribute again.\n\n\
 Once you provided a valid key, you can always opt out again and return to using the account shared among \
-all bot users. To do so, simply restart the bot with /start.\n\nThis is the invalid API key you provided:\n';
+all bot users. To do so, simply reset the bot with /reset.\n\nThis is the invalid API key you provided:\n';
 
 export const noMoreConversionMinutes = 'It looks like there is no free conversions remaining! \
 Check /balance!\n\nYou will automatically be provided with 25 more free conversions \
