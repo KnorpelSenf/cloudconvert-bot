@@ -33,6 +33,16 @@ export async function help(ctx: TaskContext): Promise<void> {
     }
 }
 
+export async function reset(ctx: TaskContext): Promise<void> {
+    debug('/reset');
+    if (ctx.chat !== undefined) {
+        await Promise.all([
+            ctx.reply(strings.reset),
+            ctx.db.resetChat(ctx.chat),
+        ]);
+    }
+}
+
 export async function cancel(ctx: TaskContext): Promise<void> {
     debug('/cancel');
     if (ctx.chat !== undefined) {

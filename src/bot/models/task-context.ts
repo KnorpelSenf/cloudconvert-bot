@@ -23,6 +23,8 @@ export type ChatKey = Chat | number;
 export interface ChatManager {
     registerChat: (chat: ChatKey, apiKey?: string) => Promise<void>;
 
+    resetChat: (chat: ChatKey) => Promise<void>;
+
     unregisterChat: (chat: ChatKey) => Promise<void>;
 }
 
