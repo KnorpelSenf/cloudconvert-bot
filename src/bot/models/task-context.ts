@@ -1,7 +1,7 @@
 import { UpdateWriteOpResult } from 'mongodb';
 import { ContextMessageUpdate } from 'telegraf';
+import I18n from 'telegraf-i18n';
 import { Chat } from 'telegram-typings';
-import { BotInfo } from '../bot';
 import { AutoFileConversion } from './file-conversion';
 import Task from './task';
 
@@ -16,6 +16,7 @@ export default interface TaskContext extends ContextMessageUpdate {
         }
     };
     db: ChatManager & TaskManager & ApiKeyManager;
+    i18n: I18n;
 }
 
 export type ChatKey = Chat | number;

@@ -1,5 +1,4 @@
 import d from 'debug';
-import * as strings from '../../strings';
 import * as htmlUtils from '../helpers/html-escaper';
 import * as cloudconvert from '../models/cloud-convert';
 import TaskContext from '../models/task-context';
@@ -8,7 +7,7 @@ const debug = d('bot:contr:apikey');
 export async function handleTextMessage(ctx: TaskContext, next: (() => any) | undefined): Promise<void> {
     if (ctx?.message?.text !== undefined
         && ctx.message?.reply_to_message?.from?.id === ctx.state.bot_info.bot_id
-        && ctx.message.reply_to_message.text === strings.sendApiKey) {
+        && ctx.message.reply_to_message?.text === ctx.i18n.t('sendApiKey')) {
         debug('Handle API key');
 
         let apiKey = ctx.message.text;
