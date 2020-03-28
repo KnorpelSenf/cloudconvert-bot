@@ -33,18 +33,13 @@ export default class BotDatabase implements TaskManager, ChatManager, ApiKeyMana
     public async registerChat(chat: ChatKey): Promise<void> {
         const key = this.toDatabaseKey(chat);
         const collection = this.getCollection('tasks');
-        const oldChat = await collection.findOne(key);
-        const newChat = {
-            ...key,
-            api_key: oldChat?.api_key,
-        };
-        await collection.replaceOne(key, newChat);
+        await collection.updateOne(key, { $set: key }, { upsert: true });
     }
 
     public async resetChat(chat: ChatKey): Promise<void> {
         const key = this.toDatabaseKey(chat);
         const collection = this.getCollection('tasks');
-        await collection.updateOne(key, { $unset: { api_key: '' } });
+        await collection.replaceOne(key, key);
     }
 
     public async unregisterChat(chat: ChatKey): Promise<void> {
