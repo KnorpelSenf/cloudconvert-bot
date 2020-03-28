@@ -1,21 +1,20 @@
-import * as strings from '../../strings';
 import TaskContext from '../models/task-context';
 
 export async function addedToGroup(ctx: TaskContext): Promise<void> {
     if (ctx.message?.new_chat_members !== undefined
         && ctx.message.new_chat_members.some(user => user.id === ctx.state.bot_info.bot_id)) {
         let apiKey: string | undefined;
-        let message = strings.helpmsgStartGroups;
+        let message = ctx.i18n.t('helpmsgStartGroups');
         if (ctx.message.from !== undefined) {
             const info = await ctx.db.getTaskInformation(ctx.message.from.id);
             apiKey = info.api_key;
             if (apiKey !== undefined) {
-                message += '\n\n' + strings.personalApiKeyInUse;
+                message += '\n\n' + ctx.i18n.t('personalApiKeyInUse');
             }
         }
         await Promise.all([
             ctx.db.registerChat(ctx.message.chat, apiKey),
-            ctx.replyWithMarkdown(message),
+            ctx.replyWithHTML(message),
         ]);
     }
 }

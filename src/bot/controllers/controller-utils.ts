@@ -1,6 +1,5 @@
 import d from 'debug';
 import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
-import * as strings from '../../strings';
 import * as util from '../helpers/get-file-extension';
 import { cancelOperationReplyMarkup } from '../helpers/reply-markup-builder';
 import TaskContext from '../models/task-context';
@@ -13,10 +12,10 @@ export async function printPossibleConversions(ctx: TaskContext, fileId: string)
         fileUrl = await ctx.telegram.getFileLink(fileId);
     } catch (e) {
         if (e.code === 400) {
-            await ctx.reply(strings.fileTooBig);
+            await ctx.reply(ctx.i18n.t('fileTooBig'));
         } else {
             d('err')(e);
-            await ctx.reply(strings.unknownError);
+            await ctx.reply(ctx.i18n.t('unknownError'));
         }
         return;
     }
@@ -40,7 +39,7 @@ export async function printPossibleConversions(ctx: TaskContext, fileId: string)
     }
 
     const extra: ExtraReplyMessage = {
-        reply_markup: cancelOperationReplyMarkup,
+        reply_markup: cancelOperationReplyMarkup(ctx),
     };
     if (ctx.message !== undefined && ctx.message.chat.type !== 'private') {
         extra.reply_to_message_id = ctx.message.message_id;

@@ -30,7 +30,7 @@ export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
     debug('New key');
     if (ctx.message !== undefined && apiKey.length > 0) {
         debug('Check passed, validating message sending');
-        const statusMessage = await ctx.reply(strings.validatingApiKey, {
+        const statusMessage = await ctx.reply(ctx.i18n.t('validatingApiKey'), {
             reply_to_message_id: ctx.message.message_id,
         });
         debug(statusMessage);
@@ -45,7 +45,7 @@ export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
             await ctx.telegram.editMessageText(statusMessage.chat.id,
                 statusMessage.message_id,
                 undefined,
-                '<b>' + username + '</b>\n' + strings.apiKeyProvided, {
+                '<b>' + username + '</b>\n' + ctx.i18n.t('apiKeyProvided'), {
                 reply_to_message_id: ctx.message.message_id,
                 parse_mode: 'HTML',
             });
@@ -55,7 +55,7 @@ export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
             await ctx.telegram.editMessageText(statusMessage.chat.id,
                 statusMessage.message_id,
                 undefined,
-                strings.invalidApiKey + htmlUtils.escapeHtmlTags(apiKey), {
+                ctx.i18n.t('invalidApiKey') + htmlUtils.escapeHtmlTags(apiKey), {
                 reply_to_message_id: ctx.message.message_id,
                 parse_mode: 'HTML',
             });

@@ -1,6 +1,6 @@
 import { InlineKeyboardMarkup } from 'telegram-typings';
-import { cancelOperation } from '../../strings';
 import { AutoFileConversion } from '../models/file-conversion';
+import TaskContext from '../models/task-context';
 
 export function autoConversionReplyMarkup(conversion: AutoFileConversion): InlineKeyboardMarkup {
     const buttonText = 'auto-convert ' + conversion.from
@@ -17,11 +17,13 @@ export function autoConversionReplyMarkup(conversion: AutoFileConversion): Inlin
     };
 }
 
-export const cancelOperationReplyMarkup: InlineKeyboardMarkup = {
-    inline_keyboard: [[
-        {
-            text: cancelOperation, // button text
-            callback_data: JSON.stringify({ cancel: true }),
-        },
-    ]],
-};
+export function cancelOperationReplyMarkup(ctx: TaskContext): InlineKeyboardMarkup {
+    return {
+        inline_keyboard: [[
+            {
+                text: ctx.i18n.t('cancelOperation'), // button text
+                callback_data: JSON.stringify({ cancel: true }),
+            },
+        ]],
+    };
+}

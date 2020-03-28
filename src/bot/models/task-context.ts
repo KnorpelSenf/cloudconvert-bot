@@ -2,6 +2,7 @@ import { UpdateWriteOpResult } from 'mongodb';
 import { ContextMessageUpdate } from 'telegraf';
 import I18n from 'telegraf-i18n';
 import { Chat } from 'telegram-typings';
+import { BotInfo } from '../bot';
 import { AutoFileConversion } from './file-conversion';
 import Task from './task';
 

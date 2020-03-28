@@ -1,6 +1,5 @@
 import d from 'debug';
 import { Boolean, Record, Static } from 'runtypes';
-import * as strings from '../../strings';
 import { autoConversionReplyMarkup } from '../helpers/reply-markup-builder';
 import { AutoFileConversionType } from '../models/file-conversion';
 import TaskContext from '../models/task-context';
@@ -22,7 +21,7 @@ export async function handleCallbackQuery(ctx: TaskContext) {
             await Promise.all([
                 ctx.db.clearTask(chat),
                 ctx.answerCbQuery(),
-                ctx.editMessageText(strings.operationCancelled),
+                ctx.editMessageText(ctx.i18n.t('operationCancelled')),
             ]);
         } else {
             // Auto-conversion was toggled
@@ -53,7 +52,7 @@ export async function handleCallbackQuery(ctx: TaskContext) {
             debug(update);
             await Promise.all([
                 ctx.db.updateTaskInformation(chat, update),
-                ctx.answerCbQuery(strings.autoConversionSaved),
+                ctx.answerCbQuery(ctx.i18n.t('autoConversionSaved')),
                 ctx.editMessageReplyMarkup(autoConversionReplyMarkup(data)),
             ]);
         }

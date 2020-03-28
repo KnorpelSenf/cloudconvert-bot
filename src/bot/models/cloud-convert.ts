@@ -3,8 +3,8 @@ import CloudConvert, { Process, ProcessData } from 'cloudconvert';
 import d from 'debug';
 import { Array, Literal, Null, Number, Record, Static, String, Undefined, Union } from 'runtypes';
 import { Transform, TransformCallback } from 'stream';
-import * as strings from '../../strings';
 import * as util from '../helpers/get-file-extension';
+import TaskContext from './task-context';
 const debug = d('bot:converter');
 
 const UserType = Record({
@@ -166,13 +166,13 @@ function promiseResolver<T>(resolve: (value?: T | PromiseLike<T> | undefined) =>
     return (err: Error, t: T) => { if (err) { reject(err); } else { resolve(t); } };
 }
 
-export function describeErrorCode(err: Error & { code: number }): string {
+export function describeErrorCode(ctx: TaskContext, err: Error & { code: number }): string {
     debug(err);
     switch (err.code) {
         case 400:
             return err.message;
         case 402:
-            return strings.noMoreConversionMinutes;
+            return ctx.i18n.t('noMoreConversionMinutes');
         default:
             if (err.message) {
                 return err.message;
@@ -180,7 +180,7 @@ export function describeErrorCode(err: Error & { code: number }): string {
                 d('err')('ERROR\'S STACK AND CURRENT STACK:');
                 d('err')(err.stack);
                 d('err')(new Error().stack);
-                return strings.unknownError;
+                return ctx.i18n.t('unknownError');
             }
     }
 }

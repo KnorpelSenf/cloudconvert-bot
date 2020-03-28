@@ -1,7 +1,6 @@
 import d from 'debug';
 import filesystem from 'fs';
 import path from 'path';
-import * as strings from '../../strings';
 import * as util from '../helpers/get-file-extension';
 import { autoConversionReplyMarkup, cancelOperationReplyMarkup } from '../helpers/reply-markup-builder';
 import { AutoFileConversion } from '../models/file-conversion';
@@ -30,7 +29,7 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
 
         // Try to convert file stored by id in db
         const task = (await ctx.db.getTaskInformation(ctx.message.chat)).task;
-        if (task ?.file_id !== undefined) {
+        if (task?.file_id !== undefined) {
             await Promise.all([
                 convertFile(ctx, task.file_id, targetFormat, task.file_name),
                 ctx.db.clearTask(ctx.message.chat),
@@ -43,8 +42,8 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
             $set: { task: { target_format: targetFormat } },
         };
         await Promise.all([
-            ctx.replyWithHTML(strings.helpmsgFile + targetFormat + '!', {
-                reply_markup: cancelOperationReplyMarkup,
+            ctx.replyWithHTML(ctx.i18n.t('helpmsgFile') + targetFormat + '!', {
+                reply_markup: cancelOperationReplyMarkup(ctx),
             }),
             ctx.db.updateTaskInformation(ctx.message.chat, update),
         ]);
@@ -70,7 +69,7 @@ export async function handleDocument(ctx: TaskContext): Promise<void> {
 }
 
 export async function handlePhoto(ctx: TaskContext): Promise<void> {
-    if (ctx.message ?.photo !== undefined
+    if (ctx.message?.photo !== undefined
         && ctx.message.photo.length > 0) {
         const file = ctx.message.photo[ctx.message.photo.length - 1];
         await handleFile(ctx, file.file_id);
@@ -92,10 +91,10 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
                 fileUrl = await ctx.telegram.getFileLink(fileId);
             } catch (e) {
                 if (e.code === 400) {
-                    await ctx.reply(strings.fileTooBig);
+                    await ctx.reply(ctx.i18n.t('fileTooBig'));
                 } else {
                     d('err')(e);
-                    await ctx.reply(strings.unknownError);
+                    await ctx.reply(ctx.i18n.t('unknownError'));
                 }
                 return;
             }
@@ -116,7 +115,7 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
                 convertFile(ctx, fileId, targetFormat, fileName),
             );
             performedOneTimeConversion = true;
-        } else if (task.task ?.target_format !== undefined) {
+        } else if (task.task?.target_format !== undefined) {
             // Try to convert file to format specified in db
             conversions.push(
                 convertFile(ctx, fileId, task.task.target_format, fileName),
@@ -161,10 +160,10 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
             fileUrl = await ctx.telegram.getFileLink(fileId);
         } catch (e) {
             if (e.code === 400) {
-                await ctx.reply(strings.fileTooBig);
+                await ctx.reply(ctx.i18n.t('fileTooBig'));
             } else {
                 d('err')(e);
-                await ctx.reply(strings.unknownError);
+                await ctx.reply(ctx.i18n.t('unknownError'));
             }
             return;
         }
@@ -192,9 +191,9 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
         } catch (e) {
             if (e.code === undefined || typeof e.code !== 'number') {
                 d('err')(e);
-                await ctx.reply(strings.unknownError);
+                await ctx.reply(ctx.i18n.t('unknownError'));
             } else {
-                await ctx.reply(cloudconvert.describeErrorCode(e));
+                await ctx.reply(cloudconvert.describeErrorCode(ctx, e));
             }
             return;
         } finally {
@@ -222,10 +221,10 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
             });
         } catch (e) {
             if (e.code === 400) {
-                await ctx.reply(strings.fileTooBig);
+                await ctx.reply(ctx.i18n.t('fileTooBig'));
             } else {
                 d('err')(e);
-                await ctx.reply(strings.unknownError);
+                await ctx.reply(ctx.i18n.t('unknownError'));
             }
             return;
         } finally {
