@@ -11,7 +11,7 @@
     "autoConversionSaved": "Gespeichert.",
     "remainingConversions": "Verbleibende Umwandlungen",
     "customApiKeyInstruction": "Brauchst du mehr Umwandlungen? /contribute",
-    "helpmsgFeedback": "Gefällt dir dieser Bot? Lass dem Entwickler @KnorpelSenf einen Dankesgruß da oder teile deine Gedanken in der Diskussionsgruppe unter @cloud_convert_bot_lounge!\n\nDie beste Art, um Danke zu sagen, ist die Beisteuerung eines API-Schlüssels. /contribute",
+    "helpmsgFeedback": "Gefällt dir dieser Bot? Lass dem Entwickler @KnorpelSenf einen Dankesgruß da oder teile deine Gedanken in der Diskussionsgruppe unter @cloud_convert_bot_lounge!\n\nDie beste Art, um Danke zu sagen, ist die Beisteuerung eines API-Schlüssels. /contribute\nDu kannst auch <a href=\"https://t.me/cloud_convert_bot_news/20\">bei der Übersetzung mithelfen</a>.",
     "sendApiKey": "Perfekt! Schick mir jetzt deinen API-Schlüssel als Antwort auf diese Nachricht!",
     "helpmsgInfo": "Benutz diesen Befehl mit der Antwortfunktion für eine Datei! Ich schreibe dir dann alle Datei-Informationen (Meta-Daten), die ich herausfinden kann.",
     "helpmsgConvert": "Benutz dieser Befehl mit der Antwortfunktion für eine Datei! Ich schicke dir dann eine Liste mit möglichen Umwandlungen dafür.",
