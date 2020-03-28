@@ -10,7 +10,7 @@
     },
     "scripts": {
         "prepare": "npm run gcp-build",
-        "build": "tsc && cp -r src/bot/locales/ built/bot/",
+        "build": "tsc && rm -rf built/bot/locales/ && cp -r src/bot/locales/ built/bot/",
         "gcp-build": "tsc && cp -r src/bot/locales/ built/bot/",
         "start": "DEBUG=app,err node built/app.js",
         "debug": "DEBUG='*' node built/app.js",

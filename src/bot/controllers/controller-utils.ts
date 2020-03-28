@@ -26,7 +26,7 @@ export async function printPossibleConversions(ctx: TaskContext, fileId: string)
     if (formats.length > 0) {
         // group formats by category
         const categories = formats.map(f => f.group).filter(uniques);
-        msg = 'Awesome! I can convert this ' + ext + ' to:\n'
+        msg = ctx.i18n.t('listFormats', { filetype: ext }) + '\n'
             + categories.map(cat =>
                 '<b>' + cat + '</b>\n'
                 + formats.filter(f => f.group === cat)

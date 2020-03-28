@@ -64,7 +64,10 @@ export default class Bot {
         // This might boost performance for contributors (users who provided a cc key)
         // if some action needs to be performed that does not rely on the API key,
         // especially if said action takes longer than a few CPU cycles (networking).
+        //
+        // In essence, all of the above should fit into the scope of session middleware.
 
+        debug('Available locales are', i18n.availableLocales());
         debug('Bot initialized.');
     }
 
