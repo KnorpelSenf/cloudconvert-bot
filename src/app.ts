@@ -1,11 +1,11 @@
 // enable environment vars
+import d from 'debug';
 import { config } from 'dotenv';
+import Bot from './bot/bot';
 config();
 
-import d from 'debug';
 const debug = d('app');
 
-import Bot from './bot/bot';
 
 const bot = new Bot();
 try {

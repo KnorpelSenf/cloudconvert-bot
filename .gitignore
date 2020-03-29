@@ -58,6 +58,9 @@ typings/
 .env
 .env.production
 
+# firestore secrets
+firestore-keyfile.json
+
 # next.js build output
 .next
 

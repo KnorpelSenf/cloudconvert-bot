@@ -4,7 +4,6 @@ import path from 'path';
 import * as util from '../helpers/get-file-extension';
 import { autoConversionReplyMarkup, cancelOperationReplyMarkup } from '../helpers/reply-markup-builder';
 import { AutoFileConversion } from '../models/file-conversion';
-import Task, { FileTask } from '../models/task';
 import TaskContext from '../models/task-context';
 import * as cloudconvert from './../models/cloud-convert';
 import * as controllerUtils from './controller-utils';
@@ -13,40 +12,30 @@ const debug = d('bot:contr:file');
 
 export async function handleTextMessage(ctx: TaskContext, next: (() => any) | undefined): Promise<void> {
     if (ctx.message !== undefined
-        && ctx.state.command !== undefined) {
+        && ctx.command !== undefined) {
 
-        const targetFormat = ctx.state.command.command.replace(/_/g, '.');
+        const targetFormat = ctx.command.command.replace(/_/g, '.');
 
         // Try to convert file in reply
         const replyFile = await controllerUtils.getFileIdFromReply(ctx);
         if (replyFile !== undefined) {
-            await Promise.all([
-                convertFile(ctx, replyFile.file_id, targetFormat, replyFile.file_name),
-                ctx.db.clearTask(ctx.message.chat),
-            ]);
+            await convertFile(ctx, replyFile.file_id, targetFormat, replyFile.file_name);
+            ctx.session.task = undefined;
             return;
         }
 
         // Try to convert file stored by id in db
-        const task = (await ctx.db.getTaskInformation(ctx.message.chat)).task;
-        if (task?.file_id !== undefined) {
-            await Promise.all([
-                convertFile(ctx, task.file_id, targetFormat, task.file_name),
-                ctx.db.clearTask(ctx.message.chat),
-            ]);
+        if (ctx.session.task?.file_id !== undefined) {
+            await convertFile(ctx, ctx.session.task.file_id, targetFormat, ctx.session.task.file_name);
+            ctx.session.task = undefined;
             return;
         }
 
         // No file yet, send instruction to send file
-        const update = {
-            $set: { task: { target_format: targetFormat } },
-        };
-        await Promise.all([
-            ctx.replyWithHTML(ctx.i18n.t('helpmsgFile') + targetFormat + '!', {
-                reply_markup: cancelOperationReplyMarkup(ctx),
-            }),
-            ctx.db.updateTaskInformation(ctx.message.chat, update),
-        ]);
+        ctx.session.task = { target_format: targetFormat };
+        await ctx.replyWithHTML(ctx.i18n.t('helpmsgFile') + targetFormat + '!', {
+            reply_markup: cancelOperationReplyMarkup(ctx),
+        });
     } else if (next !== undefined) {
         return next();
     }
@@ -78,14 +67,12 @@ export async function handlePhoto(ctx: TaskContext): Promise<void> {
 
 async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): Promise<void> {
     if (ctx.message !== undefined) {
-        const task = await ctx.db.getTaskInformation(ctx.message.chat);
-
         // Do not try to convert file to format specified in reply
         // as this would be counter-intuitive.
 
         const conversions: Array<Promise<void>> = [];
         // Perform all auto-conversions
-        if (task.auto !== undefined) {
+        if (ctx.session.auto !== undefined) {
             let fileUrl: string;
             try {
                 fileUrl = await ctx.telegram.getFileLink(fileId);
@@ -100,7 +87,7 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
             }
             const ext = util.ext(fileUrl);
             conversions.push(
-                ...task.auto
+                ...ctx.session.auto
                     .filter(c => c.from === ext)
                     .map(c => convertFile(ctx, fileId, c.to, fileName)),
             );
@@ -108,25 +95,23 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
 
         // Perform one-time conversion
         let performedOneTimeConversion = false;
-        if (ctx.state.command !== undefined) {
+        if (ctx.command !== undefined) {
             // Try to convert file to format specified in caption
-            const targetFormat = ctx.state.command.command;
+            const targetFormat = ctx.command.command;
             conversions.push(
                 convertFile(ctx, fileId, targetFormat, fileName),
             );
             performedOneTimeConversion = true;
-        } else if (task.task?.target_format !== undefined) {
+        } else if (ctx.session.task?.target_format !== undefined) {
             // Try to convert file to format specified in db
             conversions.push(
-                convertFile(ctx, fileId, task.task.target_format, fileName),
+                convertFile(ctx, fileId, ctx.session.task.target_format, fileName),
             );
             performedOneTimeConversion = true;
         }
         if (performedOneTimeConversion) {
             // Clear the task if any of the two above were performed
-            conversions.push(
-                ctx.db.clearTask(ctx.message.chat),
-            );
+            ctx.session.task = undefined;
         }
 
         if (conversions.length > 0) {
@@ -140,15 +125,11 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
 
 export async function setSourceFile(ctx: TaskContext, fileId: string, fileName?: string) {
     if (ctx.message !== undefined) {
-        const task: FileTask = { file_id: fileId };
+        ctx.session.task = { file_id: fileId };
         if (fileName !== undefined) {
-            task.file_name = fileName;
+            ctx.session.task.file_name = fileName;
         }
-        const update = { $set: { task } };
-        await Promise.all([
-            controllerUtils.printPossibleConversions(ctx, fileId),
-            ctx.db.updateTaskInformation(ctx.message.chat, update),
-        ]);
+        await controllerUtils.printPossibleConversions(ctx, fileId);
     }
 }
 
@@ -168,17 +149,10 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
             return;
         }
 
-        let task: Partial<Task>;
-        let stream: NodeJS.ReadableStream;
-
         // Get info and convert file, show :thinking_face: in the meantime
-        let thinkingMessage;
-        [thinkingMessage, task] = await Promise.all([
-            ctx.reply(String.fromCodePoint(0x1f914) /* <- thinking face emoji */, {
-                reply_to_message_id: ctx.message.message_id,
-            }),
-            ctx.db.getTaskInformation(ctx.message.chat.id),
-        ]);
+        const thinkingMessage = await ctx.reply(String.fromCodePoint(0x1f914) /* <- thinking face emoji */, {
+            reply_to_message_id: ctx.message.message_id,
+        });
 
         fileName = fileName || path.basename(fileUrl);
         const extension = '.' + targetFormat;
@@ -186,8 +160,9 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
             fileName += extension;
         }
 
+        let stream: NodeJS.ReadableStream;
         try {
-            stream = await cloudconvert.convertFile(fileUrl, targetFormat, fileName, task.api_key);
+            stream = await cloudconvert.convertFile(fileUrl, targetFormat, fileName, ctx.session.api_key);
         } catch (e) {
             if (e.code === undefined || typeof e.code !== 'number') {
                 d('err')(e);
@@ -211,8 +186,8 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
         const conversion: AutoFileConversion = {
             from: sourceFormat,
             to: targetFormat,
-            auto: task.auto !== undefined
-                && task.auto.some(c => c.from === sourceFormat && c.to === targetFormat),
+            auto: ctx.session.auto !== undefined
+                && ctx.session.auto.some(c => c.from === sourceFormat && c.to === targetFormat),
         };
         try {
             await ctx.replyWithDocument({ source: stream, filename: fileName }, {
@@ -230,6 +205,10 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
         } finally {
             clearInterval(handle);
         }
-        await ctx.db.logConversionPerformed(ctx.message.chat, conversion);
+        ctx.performedConversion = {
+            ...conversion,
+            chat_id: ctx.message.chat.id,
+            date: new Date(),
+        };
     }
 }

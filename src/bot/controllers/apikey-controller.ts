@@ -6,7 +6,7 @@ const debug = d('bot:contr:apikey');
 
 export async function handleTextMessage(ctx: TaskContext, next: (() => any) | undefined): Promise<void> {
     if (ctx?.message?.text !== undefined
-        && ctx.message?.reply_to_message?.from?.id === ctx.state.bot_info.bot_id
+        && ctx.message?.reply_to_message?.from?.id === ctx.bot_info.bot_id
         && ctx.message.reply_to_message?.text === ctx.i18n.t('sendApiKey')) {
         debug('Handle API key');
 
@@ -16,7 +16,7 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
         if (apiKey.startsWith('/apikey')) {
             apiKey = apiKey.substring(7).trim();
             if (apiKey.startsWith('@')) {
-                apiKey = apiKey.substring(ctx.state.bot_info.bot_name.length + 1).trim();
+                apiKey = apiKey.substring(ctx.bot_info.bot_name.length + 1).trim();
             }
         }
 
@@ -40,7 +40,7 @@ export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
         const valid = username !== undefined;
         if (valid) {
             debug('Saving key');
-            await ctx.db.saveApiKey(ctx.message.chat, apiKey);
+            ctx.session.api_key = apiKey;
             debug('Editing message to success');
             await ctx.telegram.editMessageText(statusMessage.chat.id,
                 statusMessage.message_id,

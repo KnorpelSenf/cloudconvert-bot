@@ -19,23 +19,22 @@
         "deploy": "gcloud app deploy"
     },
     "dependencies": {
+        "@google-cloud/firestore": "^3.7.2",
         "axios": "^0.19.2",
         "cloudconvert": "^1.1.2",
         "debug": "^4.1.1",
         "dotenv": "^8.2.0",
-        "dotenv-flow": "^3.1.0",
         "express": "^4.17.1",
-        "mongodb": "^3.5.5",
         "pretty-bytes": "^5.3.0",
         "runtypes": "^4.2.0",
         "telegraf": "^3.36.0",
         "telegraf-i18n": "^6.6.0",
+        "telegraf-session-firestore": "^2.1.0",
         "treeify": "^1.1.0"
     },
     "devDependencies": {
         "@types/debug": "^4.1.5",
         "@types/express": "^4.17.3",
-        "@types/mongodb": "^3.5.4",
         "@types/treeify": "^1.0.0",
         "tslint": "^5.20.1",
         "typescript": "^3.8.3"

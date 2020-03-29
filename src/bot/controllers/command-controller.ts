@@ -15,10 +15,8 @@ export async function start(ctx: TaskContext): Promise<void> {
         const response = ctx.chat.type === 'private'
             ? ctx.i18n.t('helpmsgStartPrivate')
             : ctx.i18n.t('helpmsgStartGroups');
-        await Promise.all([
-            ctx.replyWithHTML(response),
-            ctx.db.registerChat(ctx.chat),
-        ]);
+        // TODO: How do I register a chat?
+        await ctx.replyWithHTML(response);
     }
 }
 
@@ -35,27 +33,23 @@ export async function help(ctx: TaskContext): Promise<void> {
 export async function reset(ctx: TaskContext): Promise<void> {
     debug('/reset');
     if (ctx.chat !== undefined) {
-        await Promise.all([
-            ctx.reply(ctx.i18n.t('reset')),
-            ctx.db.resetChat(ctx.chat),
-        ]);
+        ctx.session.task = undefined;
+        await ctx.reply(ctx.i18n.t('reset'));
     }
 }
 
 export async function cancel(ctx: TaskContext): Promise<void> {
     debug('/cancel');
     if (ctx.chat !== undefined) {
-        await Promise.all([
-            ctx.reply(ctx.i18n.t('operationCancelled')),
-            ctx.db.clearTask(ctx.chat),
-        ]);
+        ctx.session.task = undefined;
+        await ctx.reply(ctx.i18n.t('operationCancelled'));
     }
 }
 
 export async function balance(ctx: TaskContext): Promise<void> {
     debug('/balance');
     if (ctx.chat !== undefined) {
-        const minutes = await cloudconvert.getBalance(await ctx.db.getKey(ctx.chat));
+        const minutes = await cloudconvert.getBalance();
         await ctx.replyWithHTML(ctx.i18n.t('remainingConversions') + ': <b>' + minutes + '</b>\n\n'
             + ctx.i18n.t('customApiKeyInstruction'));
     }
@@ -64,10 +58,9 @@ export async function balance(ctx: TaskContext): Promise<void> {
 export async function contribute(ctx: TaskContext): Promise<void> {
     debug('/contribute');
     if (ctx.chat !== undefined) {
-        const userApiKey = await ctx.db.getKey(ctx.chat);
-        const response = userApiKey === undefined
+        const response = ctx.session.api_key === undefined
             ? ctx.i18n.t('helpmsgSetUpAccount')
-            : ctx.i18n.t('helpmsgBalanceWithApiKey') + '\n<pre>' + userApiKey + '</pre>\n\n' + ctx.i18n.t('helpmsgBuyMinutes');
+            : ctx.i18n.t('helpmsgBalanceWithApiKey') + '\n<pre>' + ctx.session.api_key + '</pre>\n\n' + ctx.i18n.t('helpmsgBuyMinutes');
         await ctx.replyWithHTML(response);
     }
 }
@@ -85,8 +78,8 @@ export async function limitations(ctx: TaskContext): Promise<void> {
 export async function apiKey(ctx: TaskContext): Promise<void> {
     debug('/apikey');
     if (ctx.message !== undefined) {
-        if (ctx.state.command?.args?.[0] !== undefined) {
-            const key = ctx.state.command.args[0];
+        if (ctx.command?.args?.[0] !== undefined) {
+            const key = ctx.command.args[0];
             await controllerUtils.receivedApiKey(ctx, key);
         } else {
             await ctx.replyWithHTML(ctx.i18n.t('sendApiKey'), {
@@ -115,7 +108,7 @@ export async function info(ctx: TaskContext): Promise<void> {
             return;
         }
         try {
-            fileInfo = await cloudconvert.getFileInfo(url, await ctx.db.getKey(ctx.message.chat.id));
+            fileInfo = await cloudconvert.getFileInfo(url, ctx.session.api_key);
         } catch (e) {
             if (e.code === undefined || typeof e.code !== 'number') {
                 d('err')(e);

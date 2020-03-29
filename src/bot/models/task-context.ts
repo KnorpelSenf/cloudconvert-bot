@@ -1,47 +1,37 @@
-import { UpdateWriteOpResult } from 'mongodb';
-import { ContextMessageUpdate } from 'telegraf';
-import I18n from 'telegraf-i18n';
-import { Chat } from 'telegram-typings';
-import { BotInfo } from '../bot';
-import { AutoFileConversion } from './file-conversion';
-import Task from './task';
+import type { ContextMessageUpdate } from 'telegraf';
+import type I18n from 'telegraf-i18n';
+import type { BotInfo } from '../bot';
+import type { FileConversion } from './file-conversion';
 
 export default interface TaskContext extends ContextMessageUpdate {
-    state: {
-        bot_info: BotInfo;
-        // Set by command-args middleware:
-        command?: {
-            raw: string;
-            command: string;
-            args: string[];
-        }
+    // Set upon initialization
+    bot_info: BotInfo;
+    // Set by command-args middleware:
+    command?: {
+        raw: string;
+        command: string;
+        args: string[];
     };
-    db: ChatManager & TaskManager & ApiKeyManager;
+    // Session read from firebase
+    session: {
+        task?: FileTask;
+        api_key?: string;
+        auto?: FileConversion[];
+    };
+    // Can be set to log a performed conversion after a request
+    performedConversion?: {
+        chat_id: number;
+        from: string;
+        to: string;
+        auto: boolean;
+        date: Date;
+    };
+    // I18n object permitting access to localized strings
     i18n: I18n;
 }
 
-export type ChatKey = Chat | number;
-
-export interface ChatManager {
-    registerChat: (chat: ChatKey, apiKey?: string) => Promise<void>;
-
-    resetChat: (chat: ChatKey) => Promise<void>;
-
-    unregisterChat: (chat: ChatKey) => Promise<void>;
-}
-
-export interface TaskManager {
-    getKey: (chat: ChatKey) => Promise<string | undefined>;
-
-    getTaskInformation: (chat: ChatKey) => Promise<Partial<Task>>;
-
-    updateTaskInformation: (chat: ChatKey, update: any) => Promise<UpdateWriteOpResult>;
-
-    clearTask: (chat: ChatKey) => Promise<void>;
-
-    logConversionPerformed: (chat: ChatKey, conversion: AutoFileConversion) => Promise<void>;
-}
-
-export interface ApiKeyManager {
-    saveApiKey: (chat: ChatKey, key: string) => Promise<void>;
+export interface FileTask {
+    file_id?: string;
+    target_format?: string;
+    file_name?: string;
 }

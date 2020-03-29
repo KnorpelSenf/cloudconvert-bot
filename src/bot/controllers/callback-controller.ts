@@ -18,8 +18,8 @@ export async function handleCallbackQuery(ctx: TaskContext) {
         const chat = query.message.chat;
         if ('cancel' in data) {
             // Conversion was cancelled
+            ctx.session.task = undefined;
             await Promise.all([
-                ctx.db.clearTask(chat),
                 ctx.answerCbQuery(),
                 ctx.editMessageText(ctx.i18n.t('operationCancelled')),
             ]);
@@ -44,14 +44,28 @@ export async function handleCallbackQuery(ctx: TaskContext) {
             Every entry in the above list represents a conversion (aka. a pair of
             file extensions) to be performed automatically.
             */
+            // toggle state
             data.auto = !data.auto;
-            const entry = { auto: { from: data.from, to: data.to } };
-            const update = data.auto
-                ? { $addToSet: entry } // add if not exists
-                : { $pull: entry }; // remove if exists
-            debug(update);
+            // this is the conversion to be toggled
+            const conversion = { from: data.from, to: data.to };
+
+            ctx.session.auto = ctx.session.auto || [];
+            const index = ctx.session.auto.indexOf(conversion);
+            const contained = index >= 0;
+            const desired = data.auto;
+            if (contained !== desired) {
+                if (desired) {
+                    // add if not exists
+                    ctx.session.auto.push(conversion);
+                } else {
+                    // remove if exists
+                    ctx.session.auto.splice(index, 1);
+                }
+            }
+            if (ctx.session.auto.length === 0) {
+                ctx.session.auto = undefined;
+            }
             await Promise.all([
-                ctx.db.updateTaskInformation(chat, update),
                 ctx.answerCbQuery(ctx.i18n.t('autoConversionSaved')),
                 ctx.editMessageReplyMarkup(autoConversionReplyMarkup(data)),
             ]);

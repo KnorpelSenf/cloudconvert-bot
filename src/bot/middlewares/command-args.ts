@@ -1,10 +1,10 @@
 import d from 'debug';
+import { Middleware } from 'telegraf';
+import TaskContext from '../models/task-context';
 const debug = d('bot:mw:cargs');
 
-import TaskContext from '../models/task-context';
-
 // Loosely based on https://larsgraubner.com/telegraf-middleware-command-arguments/
-export default function commandArgs(ctx: TaskContext, next: (() => any) | undefined): any {
+export default (): Middleware<TaskContext> => (ctx, next) => {
     if (ctx.updateType === 'message'
         && ctx.message !== undefined
         && (ctx.message.text !== undefined && ctx.message.text.startsWith('/')
@@ -23,12 +23,12 @@ export default function commandArgs(ctx: TaskContext, next: (() => any) | undefi
                     : match[1]
                 : '';
             const args: string[] = match[2] ? match[2].split(/\s/).filter(arg => !!arg) : [];
-            ctx.state.command = { raw, command, args };
-            debug(ctx.state.command);
+            ctx.command = { raw, command, args };
+            debug(ctx.command);
         }
 
     }
     if (next !== undefined) {
         return next();
     }
-}
+};

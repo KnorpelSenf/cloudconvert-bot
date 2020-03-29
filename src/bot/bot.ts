@@ -1,8 +1,10 @@
+import { Firestore } from '@google-cloud/firestore';
 import d from 'debug';
 import express from 'express';
 import path from 'path';
 import Telegraf from 'telegraf';
 import TelegrafI18n from 'telegraf-i18n';
+import firestoreSession from 'telegraf-session-firestore';
 import * as apiKeys from './controllers/apikey-controller';
 import * as callbacks from './controllers/callback-controller';
 import * as commands from './controllers/command-controller';
@@ -10,7 +12,6 @@ import * as fallbacks from './controllers/fallback-controller';
 import * as files from './controllers/file-controller';
 import * as groups from './controllers/group-controller';
 import commandArgs from './middlewares/command-args';
-import BotDatabase from './models/bot-database';
 import TaskContext from './models/task-context';
 const debug = d('bot:main');
 
@@ -25,16 +26,10 @@ export interface BotInfo {
 
 export default class Bot {
 
-    private db: BotDatabase;
     private bot: Telegraf<TaskContext>;
-
     private botInfo?: BotInfo;
 
     public constructor() {
-        const mongoDbUrl = 'mongodb://bot:'
-            + process.env.MONGO_DB_PASSWORD + '@ds255403.mlab.com:55403/cloudconvert-bot';
-        this.db = new BotDatabase(mongoDbUrl);
-
         // Init bot with bot token
         const token = process.env.BOT_API_TOKEN;
         if (token === undefined) {
@@ -42,8 +37,14 @@ export default class Bot {
         }
         this.bot = new Telegraf(token, { telegram: { webhookReply: false } });
 
-        // Add database to context object
-        this.bot.context.db = this.db;
+        // Make session data available
+        const db = new Firestore({
+            projectId: 'cloudconvert-bot-257814',
+            keyFilename: 'firestore-keyfile.json',
+        });
+        this.bot.use(firestoreSession(db.collection('sessions'), {
+            getSessionKey: (ctx: TaskContext) => ctx.chat?.id.toString(),
+        }));
 
         // Make internationalization available
         const i18n = new TelegrafI18n({
@@ -53,29 +54,14 @@ export default class Bot {
         this.bot.use(i18n.middleware());
 
         // Make arg parsing available
-        this.bot.use(commandArgs);
-
-        // TODO: use middleware to add a function to the context
-        // that can easily query the db for the cc key and cache a cc instance.
-        // Make the function return a promise to hide away the potential db call
-        // and the caching. Replace all calls alike:
-        // await ctx.db.getKey(ctx.message.chat.id)
-        //
-        // This might boost performance for contributors (users who provided a cc key)
-        // if some action needs to be performed that does not rely on the API key,
-        // especially if said action takes longer than a few CPU cycles (networking).
-        //
-        // In essence, all of the above should fit into the scope of session middleware.
+        this.bot.use(commandArgs());
 
         debug('Available locales are', i18n.availableLocales());
         debug('Bot initialized.');
     }
 
     public async start() {
-        const [me] = await Promise.all([
-            this.bot.telegram.getMe(),
-            this.db.connect(),
-        ]);
+        const me = await this.bot.telegram.getMe();
         const botId = me.id;
         const botName = me.username || '';
         const isDevBot = botName.includes('dev');
@@ -85,7 +71,7 @@ export default class Bot {
         // Listeners (esp. for commands) can only be registered now that the bot name is known
         this.registerListeners();
 
-        this.bot.context.state = { bot_info: this.botInfo };
+        this.bot.context.bot_info = this.botInfo;
 
         if (isDevBot) {
             await this.bot.telegram.deleteWebhook();
