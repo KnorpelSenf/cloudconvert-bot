@@ -15,6 +15,9 @@ import commandArgs from './middlewares/command-args';
 import TaskContext from './models/task-context';
 const debug = d('bot:main');
 
+// TODO: use API key in group chat if adding user already supplied it in private chat
+// ctx.i18n.t('personalApiKeyInUse')
+
 // ID of the dev's dedicated debug log channel
 const adminId = process.env.ADMIN_ID;
 
@@ -27,7 +30,6 @@ export interface BotInfo {
 export default class Bot {
 
     private bot: Telegraf<TaskContext>;
-    private botInfo?: BotInfo;
 
     public constructor() {
         // Init bot with bot token
@@ -65,13 +67,11 @@ export default class Bot {
         const botId = me.id;
         const botName = me.username || '';
         const isDevBot = botName.includes('dev');
-        this.botInfo = { bot_id: botId, bot_name: botName, is_dev_bot: isDevBot };
+        this.bot.context.bot_info = { bot_id: botId, bot_name: botName, is_dev_bot: isDevBot };
 
         this.bot.options.username = botName;
         // Listeners (esp. for commands) can only be registered now that the bot name is known
         this.registerListeners();
-
-        this.bot.context.bot_info = this.botInfo;
 
         if (isDevBot) {
             await this.bot.telegram.deleteWebhook();
@@ -132,7 +132,7 @@ export default class Bot {
             const log = 'Error:\n' + JSON.stringify(err, null, 2)
                 + '\nTrace:\n' + new Error().stack;
             this.bot.telegram.sendMessage(adminId, log);
-            if (this.botInfo !== undefined && this.botInfo.is_dev_bot) {
+            if (this.bot.context.bot_info.is_dev_bot) {
                 debug(log);
             }
         }
