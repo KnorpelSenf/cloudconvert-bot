@@ -18,7 +18,7 @@
     "helpmsgFile": "Alright, now send me a file to be converted to ",
     "fileInfo": "Here's your file info:",
     "noFileInfo": "I couldn't find any meta data about your file, sorry!",
-    "reset": "I cleared your API key from the database. Sorry to see you go! :(\nYou can always get your free conversion minutes back by sending /contribute!",
+    "reset": "I reset all your configuration, including API key. Sorry to see you go! :(\nYou can always get your free conversion minutes back by sending /contribute!",
     "cancelOperation": "Cancel operation",
     "operationCancelled": "Operation cancelled.",
     "helpmsgText": "I cannot convert text messages. Instead, send me a file to convert it!",
