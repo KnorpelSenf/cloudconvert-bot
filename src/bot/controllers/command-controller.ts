@@ -33,7 +33,7 @@ export async function help(ctx: TaskContext): Promise<void> {
 export async function reset(ctx: TaskContext): Promise<void> {
     debug('/reset');
     if (ctx.chat !== undefined) {
-        ctx.session.task = undefined;
+        ctx.session = {};
         await ctx.reply(ctx.i18n.t('reset'));
     }
 }
@@ -49,7 +49,7 @@ export async function cancel(ctx: TaskContext): Promise<void> {
 export async function balance(ctx: TaskContext): Promise<void> {
     debug('/balance');
     if (ctx.chat !== undefined) {
-        const minutes = await cloudconvert.getBalance();
+        const minutes = await cloudconvert.getBalance(ctx.session.api_key);
         await ctx.replyWithHTML(ctx.i18n.t('remainingConversions') + ': <b>' + minutes + '</b>\n\n'
             + ctx.i18n.t('customApiKeyInstruction'));
     }

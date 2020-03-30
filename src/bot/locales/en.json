@@ -29,5 +29,5 @@
     "unknownError": "Something went wrong. Sorry for that. You may write me in @cloud_convert_bot_lounge because of this.",
     "invalidApiKey": "Your API key is invalid! Did you follow the steps under /contribute?\n\n1) Do not type the API key yourself as there could be a typo. Instead, copy and paste the API key from the website directly.\n2) Do not use Facebook login on www.cloudconvert.com. Use an email instead. Google login should work, too.\n3) If nothing works, you can re-generate the API on the dashboard and try /contribute again.\n\nOnce you provided a valid key, you can always opt out again and return to using the account shared among all bot users. To do so, simply reset the bot with /reset.\n\nThis is the invalid API key you provided:\n",
     "noMoreConversionMinutes": "It looks like there is no free conversions remaining! Check /balance!\n\nYou will automatically be provided with 25 more free conversions within the next 24 hours. If you don't want to wait, can convert your file right now. You just need to follow the steps under /contribute.",
-    "listFormats": "Awesome! I can convert this ${uppercase(filetype)} to:"
+    "listFormats": "Awesome! I can convert this ${filetype} to:"
 }

@@ -1,6 +1,7 @@
 import d from 'debug';
 import filesystem from 'fs';
 import path from 'path';
+import rundef from 'rundef';
 import * as util from '../helpers/get-file-extension';
 import { autoConversionReplyMarkup, cancelOperationReplyMarkup } from '../helpers/reply-markup-builder';
 import { AutoFileConversion } from '../models/file-conversion';
@@ -205,10 +206,10 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
         } finally {
             clearInterval(handle);
         }
-        ctx.performedConversion = {
+        ctx.db.collection('stats').add(rundef({
             ...conversion,
             chat_id: ctx.message.chat.id,
             date: new Date(),
-        };
+        }, true, true));
     }
 }

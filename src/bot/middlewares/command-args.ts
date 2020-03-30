@@ -14,7 +14,6 @@ export default (): Middleware<TaskContext> => (ctx, next) => {
             || ctx.message.caption
             || 'this will never happen, but if it does, it will not match the regex';
         const match = text.match(/^\/([^\s]+)\s?([\s\S]+)?/);
-        debug(text);
         if (match !== null) {
             const raw: string = text;
             const command: string = match[1]

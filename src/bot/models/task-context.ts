@@ -1,3 +1,4 @@
+import type { Firestore } from '@google-cloud/firestore';
 import type { ContextMessageUpdate } from 'telegraf';
 import type I18n from 'telegraf-i18n';
 import type { BotInfo } from '../bot';
@@ -13,21 +14,17 @@ export default interface TaskContext extends ContextMessageUpdate {
         args: string[];
     };
     // Session read from firebase
-    session: {
-        task?: FileTask;
-        api_key?: string;
-        auto?: FileConversion[];
-    };
-    // Can be set to log a performed conversion after a request
-    performedConversion?: {
-        chat_id: number;
-        from: string;
-        to: string;
-        auto: boolean;
-        date: Date;
-    };
+    session: SessionData;
+    // Database
+    db: Firestore;
     // I18n object permitting access to localized strings
     i18n: I18n;
+}
+
+export interface SessionData {
+    task?: FileTask;
+    api_key?: string;
+    auto?: FileConversion[];
 }
 
 export interface FileTask {

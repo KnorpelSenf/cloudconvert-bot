@@ -29,5 +29,5 @@
     "unknownError": "Da ist was schiefgelaufen. Entschuldige. Du kannst dich gerne in @cloud_convert_bot_lounge darüber beschweren.",
     "invalidApiKey": "Dieser API-Schlüssel ist ungültig! Hast du die Schritte unter /contribute befolgt?\n\n1) Schreib den API-Schlüssel nicht selbst ab, da dann Tippfehler auftreten. Mach das besser über Kopieren & Einfügen direkt aus der Webseite heraus.\n2) Erstell dein Konto bei www.cloudconvert.com nicht via Facebook-Login. Nimm stattdessen E-Mail. Google müsste auch gehen.\n3) Falls gar nichts davon klappt, kannst du den API-Schüssel auf dem Dashbord auch neu erzeugen lassen und dann noch einmal /contribute probieren.\n\nSobald du den API-Schlüssel eingereicht hast, kannst du den jederzeit wieder zurückziehen und zum Standard-Konto zurückkehren. Schreib dafür einfach /reset.\n\nDiesen API-Schlüssel wolltest du einreichen:",
     "noMoreConversionMinutes": "Sieht aus, als hättest du keine Umwandlungen mehr über! Siehe /balance\n\nDu bekommst automatisch weiter 25 Umwandlungen innerhalb der nächsten 24 Stunden. Wenn du nicht warten willst, kannst du die Datei auch sofort umwandeln. Folg dazu einfach den Schritten unter /contribute.",
-    "listFormats": "Ausgezeichnet! Ich kann ${uppercase(filetype)} umwandeln zu:"
+    "listFormats": "Ausgezeichnet! Ich kann ${filetype} umwandeln zu:"
 }

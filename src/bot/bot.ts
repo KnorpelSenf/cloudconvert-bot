@@ -12,11 +12,9 @@ import * as fallbacks from './controllers/fallback-controller';
 import * as files from './controllers/file-controller';
 import * as groups from './controllers/group-controller';
 import commandArgs from './middlewares/command-args';
+import sessionRundef from './middlewares/session-rundef';
 import TaskContext from './models/task-context';
 const debug = d('bot:main');
-
-// TODO: use API key in group chat if adding user already supplied it in private chat
-// ctx.i18n.t('personalApiKeyInUse')
 
 // ID of the dev's dedicated debug log channel
 const adminId = process.env.ADMIN_ID;
@@ -47,6 +45,12 @@ export default class Bot {
         this.bot.use(firestoreSession(db.collection('sessions'), {
             getSessionKey: (ctx: TaskContext) => ctx.chat?.id.toString(),
         }));
+
+        // Make sure we remove all undefined values before saving it to Firestore
+        this.bot.use(sessionRundef());
+
+        // Also make DB available directly
+        this.bot.context.db = db;
 
         // Make internationalization available
         const i18n = new TelegrafI18n({
@@ -130,7 +134,7 @@ export default class Bot {
     private report(err: any) {
         if (adminId !== undefined) { // <- the dev's debug log channel id
             const log = 'Error:\n' + JSON.stringify(err, null, 2)
-                + '\nTrace:\n' + new Error().stack;
+                + '\nTrace:\n' + (err?.stack === undefined ? new Error() : err).stack;
             this.bot.telegram.sendMessage(adminId, log);
             if (this.bot.context.bot_info.is_dev_bot) {
                 debug(log);
