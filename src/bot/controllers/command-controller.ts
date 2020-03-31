@@ -15,8 +15,10 @@ export async function start(ctx: TaskContext): Promise<void> {
         const response = ctx.chat.type === 'private'
             ? ctx.i18n.t('helpmsgStartPrivate')
             : ctx.i18n.t('helpmsgStartGroups');
-        // TODO: How do I register a chat?
         await ctx.replyWithHTML(response);
+        await ctx.db.collection('userstats').doc(ctx.chat.id.toString()).set({
+            type: ctx.chat.type,
+        });
     }
 }
 
