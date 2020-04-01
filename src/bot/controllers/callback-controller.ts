@@ -15,10 +15,10 @@ export async function handleCallbackQuery(ctx: TaskContext) {
     const query = ctx.callbackQuery;
     if (query?.data !== undefined && query.message !== undefined) {
         const data: CallbackQueryData = CallbackQueryDataType.check(JSON.parse(query.data));
-        const chat = query.message.chat;
+        const session = await ctx.session;
         if ('cancel' in data) {
             // Conversion was cancelled
-            ctx.session.task = undefined;
+            delete session.task;
             await Promise.all([
                 ctx.answerCbQuery(),
                 ctx.editMessageText(ctx.i18n.t('operationCancelled')),
@@ -49,21 +49,21 @@ export async function handleCallbackQuery(ctx: TaskContext) {
             // this is the conversion to be toggled
             const conversion = { from: data.from, to: data.to };
 
-            ctx.session.auto = ctx.session.auto || [];
-            const index = ctx.session.auto.indexOf(conversion);
+            session.auto = session.auto || [];
+            const index = session.auto.indexOf(conversion);
             const contained = index >= 0;
             const desired = data.auto;
             if (contained !== desired) {
                 if (desired) {
                     // add if not exists
-                    ctx.session.auto.push(conversion);
+                    session.auto.push(conversion);
                 } else {
                     // remove if exists
-                    ctx.session.auto.splice(index, 1);
+                    session.auto.splice(index, 1);
                 }
             }
-            if (ctx.session.auto.length === 0) {
-                ctx.session.auto = undefined;
+            if (session.auto.length === 0) {
+                delete session.auto;
             }
             await Promise.all([
                 ctx.answerCbQuery(ctx.i18n.t('autoConversionSaved')),

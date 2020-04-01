@@ -43,7 +43,7 @@ export async function reset(ctx: TaskContext): Promise<void> {
 export async function cancel(ctx: TaskContext): Promise<void> {
     debug('/cancel');
     if (ctx.chat !== undefined) {
-        ctx.session.task = undefined;
+        delete (await ctx.session).task;
         await ctx.reply(ctx.i18n.t('operationCancelled'));
     }
 }
@@ -51,7 +51,7 @@ export async function cancel(ctx: TaskContext): Promise<void> {
 export async function balance(ctx: TaskContext): Promise<void> {
     debug('/balance');
     if (ctx.chat !== undefined) {
-        const minutes = await cloudconvert.getBalance(ctx.session.api_key);
+        const minutes = await cloudconvert.getBalance((await ctx.session).api_key);
         await ctx.replyWithHTML(ctx.i18n.t('remainingConversions') + ': <b>' + minutes + '</b>\n\n'
             + ctx.i18n.t('customApiKeyInstruction'));
     }
@@ -60,9 +60,10 @@ export async function balance(ctx: TaskContext): Promise<void> {
 export async function contribute(ctx: TaskContext): Promise<void> {
     debug('/contribute');
     if (ctx.chat !== undefined) {
-        const response = ctx.session.api_key === undefined
+        const session = await ctx.session;
+        const response = session.api_key === undefined
             ? ctx.i18n.t('helpmsgSetUpAccount')
-            : ctx.i18n.t('helpmsgBalanceWithApiKey') + '\n<pre>' + ctx.session.api_key + '</pre>\n\n' + ctx.i18n.t('helpmsgBuyMinutes');
+            : ctx.i18n.t('helpmsgBalanceWithApiKey') + '\n<pre>' + session.api_key + '</pre>\n\n' + ctx.i18n.t('helpmsgBuyMinutes');
         await ctx.replyWithHTML(response);
     }
 }
@@ -110,7 +111,7 @@ export async function info(ctx: TaskContext): Promise<void> {
             return;
         }
         try {
-            fileInfo = await cloudconvert.getFileInfo(url, ctx.session.api_key);
+            fileInfo = await cloudconvert.getFileInfo(url, (await ctx.session).api_key);
         } catch (e) {
             if (e.code === undefined || typeof e.code !== 'number') {
                 d('err')(e);

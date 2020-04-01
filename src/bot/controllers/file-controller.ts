@@ -15,25 +15,27 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
     if (ctx.message !== undefined
         && ctx.command !== undefined) {
 
+        const session = await ctx.session;
+
         const targetFormat = ctx.command.command.replace(/_/g, '.');
 
         // Try to convert file in reply
         const replyFile = await controllerUtils.getFileIdFromReply(ctx);
         if (replyFile !== undefined) {
             await convertFile(ctx, replyFile.file_id, targetFormat, replyFile.file_name);
-            ctx.session.task = undefined;
+            delete session.task;
             return;
         }
 
         // Try to convert file stored by id in db
-        if (ctx.session.task?.file_id !== undefined) {
-            await convertFile(ctx, ctx.session.task.file_id, targetFormat, ctx.session.task.file_name);
-            ctx.session.task = undefined;
+        if (session.task?.file_id !== undefined) {
+            await convertFile(ctx, session.task.file_id, targetFormat, session.task.file_name);
+            delete session.task;
             return;
         }
 
         // No file yet, send instruction to send file
-        ctx.session.task = { target_format: targetFormat };
+        session.task = { target_format: targetFormat };
         await ctx.replyWithHTML(ctx.i18n.t('helpmsgFile') + targetFormat + '!', {
             reply_markup: cancelOperationReplyMarkup(ctx),
         });
@@ -71,9 +73,11 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
         // Do not try to convert file to format specified in reply
         // as this would be counter-intuitive.
 
+        const session = await ctx.session;
+
         const conversions: Array<Promise<void>> = [];
         // Perform all auto-conversions
-        if (ctx.session.auto !== undefined) {
+        if (session.auto !== undefined) {
             let fileUrl: string;
             try {
                 fileUrl = await ctx.telegram.getFileLink(fileId);
@@ -88,7 +92,7 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
             }
             const ext = util.ext(fileUrl);
             conversions.push(
-                ...ctx.session.auto
+                ...session.auto
                     .filter(c => c.from === ext)
                     .map(c => convertFile(ctx, fileId, c.to, fileName)),
             );
@@ -103,16 +107,16 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
                 convertFile(ctx, fileId, targetFormat, fileName),
             );
             performedOneTimeConversion = true;
-        } else if (ctx.session.task?.target_format !== undefined) {
+        } else if (session.task?.target_format !== undefined) {
             // Try to convert file to format specified in db
             conversions.push(
-                convertFile(ctx, fileId, ctx.session.task.target_format, fileName),
+                convertFile(ctx, fileId, session.task.target_format, fileName),
             );
             performedOneTimeConversion = true;
         }
         if (performedOneTimeConversion) {
             // Clear the task if any of the two above were performed
-            ctx.session.task = undefined;
+            delete session.task;
         }
 
         if (conversions.length > 0) {
@@ -126,9 +130,10 @@ async function handleFile(ctx: TaskContext, fileId: string, fileName?: string): 
 
 export async function setSourceFile(ctx: TaskContext, fileId: string, fileName?: string) {
     if (ctx.message !== undefined) {
-        ctx.session.task = { file_id: fileId };
+        const session = await ctx.session;
+        session.task = { file_id: fileId };
         if (fileName !== undefined) {
-            ctx.session.task.file_name = fileName;
+            session.task.file_name = fileName;
         }
         await controllerUtils.printPossibleConversions(ctx, fileId);
     }
@@ -161,9 +166,11 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
             fileName += extension;
         }
 
+        const session = await ctx.session;
+
         let stream: NodeJS.ReadableStream;
         try {
-            stream = await cloudconvert.convertFile(fileUrl, targetFormat, fileName, ctx.session.api_key);
+            stream = await cloudconvert.convertFile(fileUrl, targetFormat, fileName, session.api_key);
         } catch (e) {
             if (e.code === undefined || typeof e.code !== 'number') {
                 d('err')(e);
@@ -187,8 +194,8 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
         const conversion: AutoFileConversion = {
             from: sourceFormat,
             to: targetFormat,
-            auto: ctx.session.auto !== undefined
-                && ctx.session.auto.some(c => c.from === sourceFormat && c.to === targetFormat),
+            auto: session.auto !== undefined
+                && session.auto.some(c => c.from === sourceFormat && c.to === targetFormat),
         };
         try {
             await ctx.replyWithDocument({ source: stream, filename: fileName }, {
@@ -206,10 +213,10 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
         } finally {
             clearInterval(handle);
         }
-        ctx.db.collection('stats').add(rundef({
+        ctx.db.collection('stats').add({
             ...conversion,
             chat_id: ctx.message.chat.id,
             date: new Date(),
-        }, true, true));
+        });
     }
 }

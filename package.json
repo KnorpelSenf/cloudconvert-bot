@@ -25,11 +25,10 @@
         "debug": "^4.1.1",
         "dotenv": "^8.2.0",
         "express": "^4.17.1",
-        "rundef": "^1.2.6",
         "runtypes": "^4.2.0",
         "telegraf": "^3.36.0",
         "telegraf-i18n": "^6.6.0",
-        "telegraf-session-firestore": "^2.1.0",
+        "telegraf-session-firestore": "^2.2.0",
         "treeify": "^1.1.0"
     },
     "devDependencies": {

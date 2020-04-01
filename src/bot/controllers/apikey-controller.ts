@@ -40,7 +40,7 @@ export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
         const valid = username !== undefined;
         if (valid) {
             debug('Saving key');
-            ctx.session.api_key = apiKey;
+            (await ctx.session).api_key = apiKey;
             debug('Editing message to success');
             await ctx.telegram.editMessageText(statusMessage.chat.id,
                 statusMessage.message_id,

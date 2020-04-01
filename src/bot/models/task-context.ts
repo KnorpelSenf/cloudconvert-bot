@@ -14,7 +14,7 @@ export default interface TaskContext extends ContextMessageUpdate {
         args: string[];
     };
     // Session read from firebase
-    session: SessionData;
+    session: Promise<SessionData> | SessionData;
     // Database
     db: Firestore;
     // I18n object permitting access to localized strings

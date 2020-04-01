@@ -14,7 +14,7 @@ export async function addedToGroup(ctx: TaskContext): Promise<void> {
             if (doc.exists) {
                 const fromSession = doc.data();
                 if (fromSession?.api_key !== undefined) {
-                    ctx.session.api_key = fromSession.api_key;
+                    (await ctx.session).api_key = fromSession.api_key;
                     message += '\n' + ctx.i18n.t('personalApiKeyInUse');
                 }
             }

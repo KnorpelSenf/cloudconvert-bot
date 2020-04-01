@@ -12,7 +12,6 @@ import * as fallbacks from './controllers/fallback-controller';
 import * as files from './controllers/file-controller';
 import * as groups from './controllers/group-controller';
 import commandArgs from './middlewares/command-args';
-import sessionRundef from './middlewares/session-rundef';
 import TaskContext from './models/task-context';
 const debug = d('bot:main');
 
@@ -44,10 +43,8 @@ export default class Bot {
         });
         this.bot.use(firestoreSession(db.collection('sessions'), {
             getSessionKey: (ctx: TaskContext) => ctx.chat?.id.toString(),
+            lazy: true,
         }));
-
-        // Make sure we remove all undefined values before saving it to Firestore
-        this.bot.use(sessionRundef());
 
         // Also make DB available directly
         this.bot.context.db = db;
