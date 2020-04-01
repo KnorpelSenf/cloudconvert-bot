@@ -29,19 +29,13 @@ export async function handleTextMessage(ctx: TaskContext, next: (() => any) | un
 export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
     debug('New key');
     if (ctx.message !== undefined && apiKey.length > 0) {
-        debug('Check passed, validating message sending');
         const statusMessage = await ctx.reply(ctx.i18n.t('validatingApiKey'), {
             reply_to_message_id: ctx.message.message_id,
         });
-        debug(statusMessage);
-        debug('Validating');
         const username = await cloudconvert.validateApiKey(apiKey);
-        debug(username);
         const valid = username !== undefined;
         if (valid) {
-            debug('Saving key');
             (await ctx.session).api_key = apiKey;
-            debug('Editing message to success');
             await ctx.telegram.editMessageText(statusMessage.chat.id,
                 statusMessage.message_id,
                 undefined,
@@ -49,9 +43,7 @@ export async function receivedApiKey(ctx: TaskContext, apiKey: string) {
                 reply_to_message_id: ctx.message.message_id,
                 parse_mode: 'HTML',
             });
-            debug('Done.');
         } else {
-            debug('Editing message to failure.');
             await ctx.telegram.editMessageText(statusMessage.chat.id,
                 statusMessage.message_id,
                 undefined,
