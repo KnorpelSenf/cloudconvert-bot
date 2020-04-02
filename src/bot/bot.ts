@@ -125,13 +125,14 @@ export default class Bot {
         this.bot.on('callback_query', callbacks.handleCallbackQuery);
 
         // Log all errors to dedicated channel
-        this.bot.catch((err: any) => this.report(err));
+        this.bot.catch((err: any, ctx: TaskContext) => this.report(err, ctx));
     }
 
-    private report(err: any) {
+    private report(err: any, ctx: TaskContext) {
         if (adminId !== undefined) { // <- the dev's debug log channel id
             const log = 'Error:\n' + JSON.stringify(err, null, 2)
-                + '\nTrace:\n' + (err?.stack === undefined ? new Error() : err).stack;
+                + '\n\nContext:\n' + { ...ctx.message, ...ctx.session, ...ctx.command }
+                + '\n\nTrace:\n' + (err?.stack === undefined ? new Error() : err).stack;
             this.bot.telegram.sendMessage(adminId, log);
             if (this.bot.context.bot_info.is_dev_bot) {
                 debug(log);
