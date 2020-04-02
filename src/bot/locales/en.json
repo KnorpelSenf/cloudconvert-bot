@@ -32,5 +32,5 @@
     "listFormats": "Awesome! I can convert this ${filetype} to:",
     "autoConvert": "auto-convert $(from) to $(to)",
     "pickLanguage": "Set your language using one of the buttons below.\n\nSpeak another language? Found a typo? Help translate this bot! Simply click <a href=\"https://poeditor.com/join/project/rBNUMw67kZ\">this link</a>!",
-    "languageName": "English"
+    "languageName": "🇬🇧 English"
 }
