@@ -41,15 +41,17 @@ async function cancel(ctx: TaskContext) {
 }
 
 async function setLanguage(ctx: TaskContext, lang: string) {
-    ctx.i18n.locale(lang);
-    await Promise.all([
-        ctx.answerCbQuery(),
-        ctx.editMessageText(ctx.i18n.t('pickLanguage'), {
-            reply_markup: selectLanguageReplyMarkup(ctx),
-            parse_mode: 'HTML',
-            disable_web_page_preview: true,
-        }),
-    ]);
+    if (ctx.i18n.locale() !== lang) {
+        ctx.i18n.locale(lang);
+        await Promise.all([
+            ctx.editMessageText(ctx.i18n.t('pickLanguage'), {
+                reply_markup: selectLanguageReplyMarkup(ctx),
+                parse_mode: 'HTML',
+                disable_web_page_preview: true,
+            }),
+            ctx.answerCbQuery(),
+        ]);
+    }
 }
 
 async function toggleAutoConversion(ctx: TaskContext, data: AutoFileConversion) {
@@ -93,8 +95,12 @@ async function toggleAutoConversion(ctx: TaskContext, data: AutoFileConversion) 
     if (session.auto.length === 0) {
         delete session.auto;
     }
-    await Promise.all([
-        ctx.answerCbQuery(ctx.i18n.t('autoConversionSaved')),
-        ctx.editMessageReplyMarkup(autoConversionReplyMarkup(ctx, data)),
-    ]);
+    try {
+        await ctx.editMessageReplyMarkup(autoConversionReplyMarkup(ctx, data));
+    } catch (e) {
+        // “Bad Request: message is not modified” happens if users spam the button
+        // and several conflicting updates are processed in parallel.
+        // We just ignore the update in this case because the correct data are eventually displayed anyway
+    }
+    await ctx.answerCbQuery(ctx.i18n.t('autoConversionSaved'));
 }
