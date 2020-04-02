@@ -3,7 +3,7 @@ import d from 'debug';
 import express from 'express';
 import path from 'path';
 import Telegraf from 'telegraf';
-import TelegrafI18n from 'telegraf-i18n';
+import TelegrafI18n, { I18n } from 'telegraf-i18n';
 import firestoreSession from 'telegraf-session-firestore';
 import * as apiKeys from './controllers/apikey-controller';
 import * as callbacks from './controllers/callback-controller';
@@ -43,18 +43,29 @@ export default class Bot {
         });
         this.bot.use(firestoreSession(db.collection('sessions'), {
             getSessionKey: (ctx: TaskContext) => ctx.chat?.id.toString(),
-            lazy: true,
+            // TODO: make telegraf-i18n support lazy mode
         }));
 
-        // Also make DB available directly
+        // Make DB available directly
         this.bot.context.db = db;
 
         // Make internationalization available
         const i18n = new TelegrafI18n({
             defaultLanguage: 'en',
+            useSession: true,
+            sessionName: 'session',
+            defaultLanguageOnMissing: true,
             directory: path.resolve(__dirname, 'locales'),
         });
         this.bot.use(i18n.middleware());
+
+        const supportedLanguages = i18n.availableLocales()
+            .sort()
+            .map(l => ({
+                locale: l,
+                name: (i18n.createContext(l, {}) as unknown as I18n).t('languageName'),
+            }));
+        this.bot.context.supported_languages = supportedLanguages;
 
         // Make arg parsing available
         this.bot.use(commandArgs());
@@ -115,6 +126,7 @@ export default class Bot {
         this.bot.command('feedback', commands.feedback);
         this.bot.command('limitations', commands.limitations);
         this.bot.command('apikey', commands.apiKey);
+        this.bot.command('language', commands.language);
         this.bot.command('info', commands.info);
         this.bot.command('convert', commands.convert);
 
@@ -131,7 +143,7 @@ export default class Bot {
     private report(err: any, ctx: TaskContext) {
         if (adminId !== undefined) { // <- the dev's debug log channel id
             const log = 'Error:\n' + JSON.stringify(err, null, 2)
-                + '\n\nContext:\n' + { ...ctx.message, ...ctx.session, ...ctx.command }
+                + '\n\nContext:\n' + JSON.stringify({ ...ctx.message, ...ctx.session, ...ctx.command }, null, 2)
                 + '\n\nTrace:\n' + (err?.stack === undefined ? new Error() : err).stack;
             this.bot.telegram.sendMessage(adminId, log);
             if (this.bot.context.bot_info.is_dev_bot) {

@@ -199,7 +199,7 @@ async function convertFile(ctx: TaskContext, fileId: string, targetFormat: strin
         try {
             await ctx.replyWithDocument({ source: stream, filename: fileName }, {
                 reply_to_message_id: ctx.message.message_id,
-                reply_markup: autoConversionReplyMarkup(conversion),
+                reply_markup: autoConversionReplyMarkup(ctx, conversion),
             });
         } catch (e) {
             if (e.code === 400) {

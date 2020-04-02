@@ -2,6 +2,7 @@ import { ProcessData } from 'cloudconvert';
 import d from 'debug';
 import treeify from 'treeify';
 import * as htmlUtils from '../helpers/html-escaper';
+import { selectLanguageReplyMarkup } from '../helpers/reply-markup-builder';
 import * as cloudconvert from '../models/cloud-convert';
 import TaskContext from '../models/task-context';
 import * as controllerUtils from './apikey-controller';
@@ -98,6 +99,16 @@ export async function apiKey(ctx: TaskContext): Promise<void> {
                 reply_markup: { force_reply: true, selective: true },
             });
         }
+    }
+}
+
+export async function language(ctx: TaskContext): Promise<void> {
+    debug('/language');
+    if (ctx.message !== undefined && ctx.command?.command === 'language') {
+        await ctx.replyWithHTML(ctx.i18n.t('pickLanguage'), {
+            reply_markup: selectLanguageReplyMarkup(ctx),
+            disable_web_page_preview: true,
+        });
     }
 }
 
