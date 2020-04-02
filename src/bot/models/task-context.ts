@@ -17,8 +17,9 @@ export default interface TaskContext extends ContextMessageUpdate {
     session: Promise<SessionData> | SessionData;
     // Database
     db: Firestore;
-    // I18n object permitting access to localized strings
-    i18n: I18n;
+    // I18nContext object permitting access to localized strings (the lib is missing types)
+    i18n: Pick<I18n, 'locale' | 't'>;
+    supported_languages: Array<{ name: string, locale: string }>;
 }
 
 export interface SessionData {

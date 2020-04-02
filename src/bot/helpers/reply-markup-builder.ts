@@ -2,9 +2,8 @@ import { InlineKeyboardMarkup } from 'telegram-typings';
 import { AutoFileConversion } from '../models/file-conversion';
 import TaskContext from '../models/task-context';
 
-export function autoConversionReplyMarkup(conversion: AutoFileConversion): InlineKeyboardMarkup {
-    const buttonText = 'auto-convert ' + conversion.from
-        + ' to ' + conversion.to + ': '
+export function autoConversionReplyMarkup(ctx: TaskContext, conversion: AutoFileConversion): InlineKeyboardMarkup {
+    const buttonText = ctx.i18n.t('autoConvert', { from: conversion.from, to: conversion.to }) + ': '
         + (conversion.auto ? String.fromCodePoint(0x2705) : String.fromCodePoint(0x274c));
     //                       ^ green tick emoji             ^ red cross emoji
     return {
@@ -25,5 +24,15 @@ export function cancelOperationReplyMarkup(ctx: TaskContext): InlineKeyboardMark
                 callback_data: JSON.stringify({ cancel: true }),
             },
         ]],
+    };
+}
+
+export function selectLanguageReplyMarkup(ctx: TaskContext): InlineKeyboardMarkup {
+    return {
+        inline_keyboard: ctx.supported_languages
+            .map(l => [{
+                text: l.name,
+                callback_data: JSON.stringify({ lang: l.locale }),
+            }]),
     };
 }
