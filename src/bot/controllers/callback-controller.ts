@@ -80,17 +80,12 @@ async function toggleAutoConversion(ctx: TaskContext, data: AutoFileConversion) 
     // this is the conversion to be toggled
     const conversion = { from: data.from, to: data.to };
     session.auto = session.auto || [];
-    const index = session.auto.indexOf(conversion);
-    const contained = index >= 0;
+    // first remove conversion from list
+    session.auto = session.auto.filter(c => c.from !== conversion.from && c.to !== conversion.to);
+    // then add if necessary
     const desired = data.auto;
-    if (contained !== desired) {
-        if (desired) {
-            // add if not exists
-            session.auto.push(conversion);
-        } else {
-            // remove if exists
-            session.auto.splice(index, 1);
-        }
+    if (desired) {
+        session.auto.push(conversion);
     }
     if (session.auto.length === 0) {
         delete session.auto;
