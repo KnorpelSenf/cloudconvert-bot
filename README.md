@@ -15,19 +15,19 @@ You need to exchange them to switch between the bots.
 ## Install
 
 ```bash
-npm up && npm i
+npm i
 ```
 
 ## Compile
 
 ```bash
-tsc
+npm run build
 ```
 
 ## Lint
 
 ```bash
-tslint -p .
+npm run lint
 ```
 
 ## Run in prod
@@ -39,7 +39,7 @@ npm start
 ## Run with all logs
 
 ```bash
-npm run-script debug
+npm run debug
 ```
 
 ## Deploy

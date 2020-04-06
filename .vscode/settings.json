@@ -1,6 +1,5 @@
 {
-    "cSpell.language": "en,en-GB,en-US,de,de-DE",
-    "cSpell.enabledLanguageIds": [
+    "cSpell.enableFiletypes": [
         "asciidoc",
         "css",
         "dockerfile",
@@ -28,5 +27,6 @@
         "yaml",
         "yml"
     ],
+    "cSpell.language": "en,en-GB,en-US,de,de-DE",
     "typescript.tsdk": "node_modules/typescript/lib"
 }
