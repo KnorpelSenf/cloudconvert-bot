@@ -3,11 +3,11 @@ const tagsToEscape = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
-};
+}
 function escapeTag(tag: string): string {
-    return tagsToEscape[tag as '&' | '<' | '>'] || tag;
+    return tagsToEscape[tag as '&' | '<' | '>'] || tag
 }
 
 export function escapeHtmlTags(str: string): string {
-    return str.replace(/[&<>]/g, escapeTag);
+    return str.replace(/[&<>]/g, escapeTag)
 }
