@@ -147,7 +147,7 @@ async function handleFile(
 
         const session = await ctx.session
 
-        let conversionPerformed = false
+        const conversions: Array<Promise<void>> = []
         // Perform all auto-conversions
         if (session.auto !== undefined && session.auto.length > 0) {
             let fileUrl: string
@@ -163,9 +163,11 @@ async function handleFile(
                 return
             }
             const ext = util.ext(fileUrl)
-            session.auto
-                .filter(c => c.from === ext)
-                .forEach(c => convertFile(ctx, fileId, c.to, fileName))
+            conversions.push(
+                ...session.auto
+                    .filter(c => c.from === ext)
+                    .map(c => convertFile(ctx, fileId, c.to, fileName))
+            )
         }
 
         // Perform one-time conversion
@@ -173,13 +175,13 @@ async function handleFile(
         if (ctx.command !== undefined) {
             // Try to convert file to format specified in caption
             const targetFormat = ctx.command.command
-            convertFile(ctx, fileId, targetFormat, fileName)
-            conversionPerformed = true
+            conversions.push(convertFile(ctx, fileId, targetFormat, fileName))
             performedOneTimeConversion = true
         } else if (session.task?.target_format !== undefined) {
             // Try to convert file to format specified in db
-            convertFile(ctx, fileId, session.task.target_format, fileName)
-            conversionPerformed = true
+            conversions.push(
+                convertFile(ctx, fileId, session.task.target_format, fileName)
+            )
             performedOneTimeConversion = true
         }
         if (performedOneTimeConversion) {
@@ -187,7 +189,9 @@ async function handleFile(
             delete session.task
         }
 
-        if (!conversionPerformed && ctx.message.chat.type === 'private') {
+        if (conversions.length > 0) {
+            await Promise.all(conversions)
+        } else if (ctx.message.chat.type === 'private') {
             // No target format yet, list conversion options
             await setSourceFile(ctx, fileId, fileName)
         }
@@ -206,7 +210,7 @@ export async function handleTextMessage(
         // Try to convert file in reply
         const replyFile = await controllerUtils.getFileIdFromReply(ctx)
         if (replyFile !== undefined) {
-            convertFile(
+            await convertFile(
                 ctx,
                 replyFile.file_id,
                 targetFormat,
@@ -218,7 +222,7 @@ export async function handleTextMessage(
 
         // Try to convert file stored by id in db
         if (session.task?.file_id !== undefined) {
-            convertFile(
+            await convertFile(
                 ctx,
                 session.task.file_id,
                 targetFormat,
