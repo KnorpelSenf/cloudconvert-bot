@@ -100,8 +100,8 @@ async function convertFile(
                 }
             )
         } catch (e) {
-            if (e.code === 400) {
-                await ctx.reply(ctx.i18n.t('fileTooBig'))
+            if (e.code === 413) {
+                await ctx.reply(ctx.i18n.t('resultFileTooBig'))
             } else {
                 d('err')(e)
                 await ctx.reply(ctx.i18n.t('unknownError'))
