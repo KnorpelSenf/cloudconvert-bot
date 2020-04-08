@@ -206,7 +206,7 @@ export async function handleTextMessage(
         // Try to convert file in reply
         const replyFile = await controllerUtils.getFileIdFromReply(ctx)
         if (replyFile !== undefined) {
-            await convertFile(
+            convertFile(
                 ctx,
                 replyFile.file_id,
                 targetFormat,
@@ -218,7 +218,7 @@ export async function handleTextMessage(
 
         // Try to convert file stored by id in db
         if (session.task?.file_id !== undefined) {
-            await convertFile(
+            convertFile(
                 ctx,
                 session.task.file_id,
                 targetFormat,
