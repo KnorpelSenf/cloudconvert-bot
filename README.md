@@ -56,6 +56,6 @@ Feel free to add your own language if you like.
 
 ## What else is there to say
 
-There's not too much documentation, but the code is quite clean IMO.
+There's not too much documentation, but the project is not too complicated anyway IMO.
 If you have questions regarding anything, contact [me](https://t.me/KnorpelSenf) or join the [discussion group](https://t.me/cloud_convert_bot_lounge).
 There's also a [news channel](https://t.me/cloud_convert_bot_news).
