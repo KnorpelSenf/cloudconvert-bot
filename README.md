@@ -2,7 +2,7 @@
 
 This Telegram bot ([@cloud_convert_bot](https://t.me/cloud_convert_bot)) mediates between the Telegram servers and those of
 cloudconvert.com to provide file conversions in Telegram. It also relies on a
-MongoDB hosted at mlab. The code runs on GAE.
+Cloud Firestore database. The code runs on GAE.
 
 Please create two bots using [@BotFather](https://t.me/BotFather), one for production and one for development.
 The bot runs with webhooks but it will automatically switch to long polling mode if 'dev' is contained in the bot name.
