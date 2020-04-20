@@ -8,6 +8,7 @@ Please create two bots using [@BotFather](https://t.me/BotFather), one for produ
 The bot runs with webhooks but it will automatically switch to long polling mode if 'dev' is contained in the bot name.
 (E. g. the primary test bot is [@cloud_convert_dev_bot](https://t.me/cloud_convert_dev_bot).)
 This way, you can host the bot efficiently (webhooks) and still use it locally (long polling).
+(I know it would be much nicer to control this via environment variable … hopefully in the future.)
 
 However, it will always rely on `.env`. The file `.env.production` will be ignored.
 You need to exchange them to switch between the bots.
