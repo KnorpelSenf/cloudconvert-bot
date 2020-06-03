@@ -111,8 +111,12 @@ inside the `.env` file.
 Three environment variables need to be set for this bot to work.
 
 1) You need to create a bot using [@BotFather](https://telegram.me/BotFather) and write its token to a variable named `BOT_API_TOKEN`
-1) You need to supply your personal CloudConvert account as a backup account for the bot. All users of your bot will share the conversion minutes from that account until they submit their own API key. Add the API key of your personal account to a variable called `CLOUD_CONVERT_API_TOKEN`.
-1) **Optional.** The bot is able to send error logs to a chat on Telegram, for example a private channel that contains the debug log. Set the ID of this chat in a variable with the name `ADMIN_ID`.
+1) You need to supply your personal CloudConvert account as a backup account for the bot.
+All users of your bot will share the conversion minutes from that account until they submit their own API key.
+Add the API key of your personal account to a variable called `CLOUD_CONVERT_API_TOKEN`.
+1) **Optional.**
+The bot is able to send error logs to a chat on Telegram, for example a private channel that contains the debug log.
+Set the ID of this chat in a variable with the name `ADMIN_ID`.
 
 It usually makes sense to create two bots using [@BotFather](https://t.me/BotFather), one for production and one for development.
 
@@ -146,7 +150,9 @@ Make sure you understand how the framework is used, including how middleware wor
 
 Basically, in `src/app.ts`, we start the bot which is in `src/bot/bot.ts`.
 It loads all sorts of middleware from the controllers in `src/bot/controllers` to handle the various different kinds of messages.
-The controllers do IO (database and replying) and control models in `src/bot/models`. The models do the actual file conversions and generally the communication with cloudconvert.com. The packages `src/bot/{helpers,middlewares}` are of supportive nature and only provide various utilities.
+The controllers do IO (database and replying) and control models in `src/bot/models`.
+The models do the actual file conversions and generally the communication with cloudconvert.com.
+The packages `src/bot/{helpers,middlewares}` are of supportive nature and only provide various utilities.
 
 ## What else is there to say
 
