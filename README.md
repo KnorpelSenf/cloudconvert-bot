@@ -148,11 +148,46 @@ gcloud app deploy
 The bots uses [Telegraf.js](https://telegraf.js.org) as the framework for the bot.
 Make sure you understand how the framework is used, including how middleware works.
 
+### Which code does what
+
 Basically, in `src/app.ts`, we start the bot which is in `src/bot/bot.ts`.
 It loads all sorts of middleware from the controllers in `src/bot/controllers` to handle the various different kinds of messages.
 The controllers do IO (database and replying) and control models in `src/bot/models`.
 The models do the actual file conversions and generally the communication with cloudconvert.com.
 The packages `src/bot/{helpers,middlewares}` are of supportive nature and only provide various utilities.
+
+### How and which data is stored
+
+Each chat has a session state.
+This of it like an object that contains everything the bot remembers about this chat.
+Session middleware handles the loading and storing of that data for us.
+The shape of the session state—including all available fields—is defined in the `SessionData` interface in `src/bot/models/task-context.ts`.
+
+The session data can be used to store partial information about the task we need to perform, such as if only a file it received but the target format is yet to be determined by the user.
+
+In addition, the bot collects a log of successfull conversions in a separate collection.
+This includes that chat ID, source and target format, timestamp and a boolean indicating if the conversion was triggered automatically using auto-conversions.
+
+A third log collection saves the chat type for each seen chat ID.
+
+Both logs are never queried and may be emptied at any time.
+
+No files are ever stored permanently by the bot.
+
+### How are files processed
+
+Assume we know a user ID, a file ID and a target format.
+We can now perform a file conversion by converting the file to the target format using the user's API key (or the default one if not applicable).
+We use this API key for all following communication with cloudconvert.com.
+
+The conversion works as follows:
+
+1) Get the link to the file of our file ID.
+1) Make cloudconvert.com pull the file directly from Telegram servers and supply the target format along the link.
+1) Wait until the conversion is performed.
+1) Download the file from cloudconvert.com and immediately send the file to the Telegram servers to the known chat as soon as the next chunk of the file is available (passthrough streaming the file).
+1) Delete the file from the servers at cloudconvert.com so they don't pollute the dashboard.
+(This would be done automatically after 24 hours if we didn't take action.)
 
 ## What else is there to say
 
