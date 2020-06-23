@@ -159,7 +159,7 @@ The packages `src/bot/{helpers,middlewares}` are of supportive nature and only p
 ### How and which data is stored
 
 Each chat has a session state.
-This of it like an object that contains everything the bot remembers about this chat.
+Think of it like an object that contains everything the bot remembers about this chat.
 Session middleware handles the loading and storing of that data for us.
 The shape of the session state—including all available fields—is defined in the `SessionData` interface in `src/bot/models/task-context.ts`.
 
