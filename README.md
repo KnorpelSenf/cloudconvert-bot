@@ -163,7 +163,7 @@ Think of it like an object that contains everything the bot remembers about this
 Session middleware handles the loading and storing of that data for us.
 The shape of the session state—including all available fields—is defined in the `SessionData` interface in `src/bot/models/task-context.ts`.
 
-The session data can be used to store partial information about the task we need to perform, such as if only a file it received but the target format is yet to be determined by the user.
+The session data can be used to store partial information about the task we need to perform, such as when only a file was received but the target format is yet to be determined by the user.
 
 In addition, the bot collects a log of successfull conversions in a separate collection.
 This includes that chat ID, source and target format, timestamp and a boolean indicating if the conversion was triggered automatically using auto-conversions.
