@@ -166,7 +166,7 @@ The shape of the session state—including all available fields—is defined in 
 The session data can be used to store partial information about the task we need to perform, such as when only a file was received but the target format is yet to be determined by the user.
 
 In addition, the bot collects a log of successfull conversions in a separate collection.
-This includes that chat ID, source and target format, timestamp and a boolean indicating if the conversion was triggered automatically using auto-conversions.
+This includes the chat ID, source and target format, timestamp, and a boolean indicating if the conversion was triggered automatically using auto-conversions.
 
 A third log collection saves the chat type for each seen chat ID.
 
