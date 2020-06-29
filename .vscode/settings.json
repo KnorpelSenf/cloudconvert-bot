@@ -28,5 +28,8 @@
         "yml"
     ],
     "cSpell.language": "en,en-GB,en-US,de,de-DE",
-    "typescript.tsdk": "node_modules/typescript/lib"
+    "typescript.tsdk": "bot/node_modules/typescript/lib",
+    "python.pythonPath": "satellite/venv/bin/python3",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true
 }
