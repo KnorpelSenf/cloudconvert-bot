@@ -32,13 +32,16 @@ def execute_on_new_session(operation):
     client.loop.run_until_complete(task())
 
 
-def upload(chat_id, file, progress_callback=None):
+def upload(chat_id, file, display_name=None, progress_callback=None):
     async def operation(client):
         media = await upload_file(client,
                                   open(file, 'rb'),
                                   progress_callback=progress_callback)
-        media.name = file
-        await client.send_file(chat_id, file=media)
+        media.name = display_name or file
+        try:
+            await client.send_file(chat_id, file=media)
+        except:
+            await client.send_file(chat_id, file=media, force_document=True)
     execute_on_new_session(operation)
 
 
