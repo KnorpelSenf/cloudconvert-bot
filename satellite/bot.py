@@ -6,11 +6,9 @@ import cloudconvert
 
 from transfers import download, upload
 
-CLOUD_CONVERT_API_KEY = os.environ['CLOUD_CONVERT_API_KEY']
-cloudconvert.configure(api_key=CLOUD_CONVERT_API_KEY)
 
-
-def export_file(task_id, chat_id):
+def export_file(api_key, task_id, chat_id):
+    cloudconvert.configure(api_key=api_key)
     with tempfile.NamedTemporaryFile() as f:
         # get cloudconvert task
         export_task = cloudconvert.Task.find(id=task_id)
@@ -22,7 +20,8 @@ def export_file(task_id, chat_id):
         upload(chat_id, f.name, display_name=file['filename'])
 
 
-def import_file(task_id, chat_id, message_id):
+def import_file(api_key, task_id, chat_id, message_id):
+    cloudconvert.configure(api_key=api_key)
     with tempfile.NamedTemporaryFile() as f:
         # download file from Telegram
         download(chat_id, message_id, f.name)
