@@ -96,10 +96,9 @@ export default class Bot {
             await this.bot.telegram.deleteWebhook()
             this.bot.startPolling()
             debug(
-                'Bot @' +
-                    username +
-                    ' started using long polling at ' +
-                    new Date()
+                'Bot @' + username,
+                'started using long polling at',
+                new Date()
             )
         } else {
             const port = process.env.PORT || 8080
@@ -111,12 +110,11 @@ export default class Bot {
             app.listen(port)
             await this.bot.telegram.setWebhook(url)
             debug(
-                'Bot @' +
-                    username +
-                    ' started using a webhook at ' +
-                    new Date() +
-                    ' for URL ' +
-                    url
+                'Bot @' + username,
+                'started using a webhook at',
+                new Date(),
+                'for URL',
+                url
             )
         }
     }
