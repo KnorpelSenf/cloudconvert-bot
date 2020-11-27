@@ -24,7 +24,7 @@
     "languageName": "🇩🇪 Deutsch",
     "listFormats": "Ausgezeichnet! Ich kann ${filetype} umwandeln zu:",
     "noFileInfo": "Ich konnte dazu leider keine Meta-Daten finden, sorry!",
-    "noMoreConversionMinutes": "Sieht aus, als hättest du keine Umwandlungen mehr über! Siehe /balance\n\nDu bekommst automatisch weiter 25 Umwandlungen innerhalb der nächsten 24 Stunden. Wenn du nicht warten willst, kannst du die Datei auch sofort umwandeln. Folg dazu einfach den Schritten unter /contribute.",
+    "noMoreConversionMinutes": "Sieht aus, als hättest du keine Umwandlungen mehr über! Siehe /balance\n\nDu bekommst automatisch weitere 25 Umwandlungen innerhalb der nächsten 24 Stunden. Wenn du nicht warten willst, kannst du die Datei auch sofort umwandeln. Folg dazu einfach den Schritten unter /contribute.",
     "operationCancelled": "Operation abgebrochen.",
     "personalApiKeyInUse": "Da du bereits einen API-Schlüssel eingereicht hast, werde ich das Konto bei Cloud Convert auch in diesem Chat verwenden! (Falls du das nicht willst, kannst du den Bot hier zurücksetzen.)",
     "pickLanguage": "Stell deine Sprache mit den Knöpfen unten ein.\n\nSprichst du eine andere Sprache? Hast du einen Tippfehler gefunden? Hilf bei der Übersetzung! Klick einfach auf <a href=\"https://poeditor.com/join/project/rBNUMw67kZ\">diesen Link</a>!",
