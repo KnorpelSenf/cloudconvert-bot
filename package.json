@@ -28,7 +28,7 @@
         "cloudconvert": "^2.3.4",
         "debug": "^4.3.1",
         "dotenv": "^8.2.0",
-        "express": "^4.17.3",
+        "express": "^4.19.2",
         "runtypes": "^4.2.0",
         "telegraf": "^3.36.0",
         "telegraf-i18n": "^6.6.0",
